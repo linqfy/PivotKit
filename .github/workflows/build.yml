@@ -1,0 +1,119 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (MSVC x86)
+        shell: cmd
+        run: build.bat
+
+      - name: Verify artifacts
+        shell: pwsh
+        run: |
+          $files = @(
+            "bin\pivotkit.dll",
+            "bin\pivotkit-loader.exe"
+          )
+          foreach ($f in $files) {
+            if (-not (Test-Path $f)) {
+              Write-Error "Missing artifact: $f"
+              exit 1
+            }
+          }
+          # Confirm the loader is a 32-bit PE.
+          $bytes = [System.IO.File]::ReadAllBytes("bin\pivotkit-loader.exe")
+          $peOff = [BitConverter]::ToInt32($bytes, 0x3C)
+          $machine = [BitConverter]::ToUInt16($bytes, $peOff + 4)
+          if ($machine -ne 0x14C) {
+            Write-Error "loader is not x86 (machine=0x{0:X})" -f $machine
+            exit 1
+          }
+          Write-Host "Artifacts OK (x86 loader, dll present)"
+
+      - name: Smoke test (syntax only)
+        shell: pwsh
+        run: |
+          # Load every sample mod through Lua to catch syntax errors early.
+          $luaExe = Get-Command luac, lua -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $luaExe) {
+            Write-Host "lua not installed; skipping mod syntax check"
+            return
+          }
+          Get-ChildItem mods\*.lua | ForEach-Object {
+            & $luaExe.Source -p $_.FullName
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pivotkit-${{ github.sha }}
+          path: |
+            bin/pivotkit.dll
+            bin/pivotkit-loader.exe
+            mods/*.lua
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pivotkit-${{ github.sha }}
+          path: release
+
+      - name: Assemble release payload
+        shell: bash
+        run: |
+          mkdir -p release_payload/pivotkit/mods
+          cp release/pivotkit.dll release_payload/pivotkit.dll
+          cp release/pivotkit-loader.exe release_payload/pivotkit-loader.exe
+          cp release/*.lua release_payload/pivotkit/mods/
+          cp README.md release_payload/README.md
+          cp -r docs release_payload/docs
+          cd release_payload && zip -r ../pivotkit-${GITHUB_REF_NAME}.zip .
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "pivotkit ${{ github.ref_name }} — HEAVY BETA"
+          body: |
+            ## ⚠️ HEAVY BETA
+
+            This project is in **heavy beta**. It is a code-injection mod loader for
+            Pivot Animator 5.2.11 (32-bit). Things may break, crash pivot.exe, or
+            corrupt your `.piv` files — use at your own risk on a backup of your work.
+
+            - Targets: **32-bit pivot.exe v5.2.11 only**
+            - Requires: Visual Studio 2022 to build from source (prebuilt binaries included)
+            - Not affiliated with Motusoft / Peter Bone / Pivot Animator.
+
+            **Install:** copy `pivotkit.dll` + `pivotkit-loader.exe` next to
+            `pivot.exe`, put mods in `pivotkit/mods/`, run `pivotkit-loader.exe`.
+            See `docs/GETTING_STARTED.md`.
+
+            **Changes in this release:**
+            - See the CHANGELOG / git log.
+          files: |
+            release_payload/pivotkit-*.zip
+          prerelease: true
+          draft: false

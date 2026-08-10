@@ -1,0 +1,1315 @@
+/*
+ * pivotkit.dll - Lua mod loader for Pivot Animator 5.2.11 (32-bit, Delphi 11 / FMX)
+ *
+ * Injected by pivotkit-loader.exe. On load it:
+ *   1. Locates the TMainForm instance at runtime via Delphi published RTTI.
+ *   2. Hooks the Win32 message loop for a per-frame tick.
+ *   3. Embeds Lua 5.4 and runs every .lua file in the pivotkit/mods/ folder.
+ *
+ * Exposed as the Lua module `pivot` — see docs/MOD_API.md.
+ */
+
+#define _WIN32_WINNT 0x0601
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+
+extern "C" {
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+}
+
+#include <objidl.h>
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
+using namespace Gdiplus;
+
+/* Version anchors (pivot.exe 5.2.11, ImageBase 0x400000). The VMT layout
+ * offsets are Delphi-11 specific and were pinned empirically. */
+#define IMAGEBASE           0x400000
+#define VMT_OFFSET          12           /* vmt base = classType - 12      */
+#define OFF_VMT_METHODTABLE 0x34         /* method table ptr @ vmt base-52 */
+#define OFF_VMT_FIELDTABLE  0x38         /* field table ptr  @ vmt base-56 */
+#define OFF_VMT_CLASSNAME   0x2C         /* class name ptr   @ vmt base-44 */
+#define OFF_VMT_INSTANCESIZE 0x28
+
+static HMODULE    g_appBase  = NULL;
+static DWORD_PTR  g_vmtBase  = 0;
+static void*      g_mainForm = NULL;
+static lua_State* g_L        = NULL;
+static volatile LONG g_frame = 0;
+static FILE*      g_log      = NULL;
+
+static DWORD_PTR rebase(DWORD_PTR anchor) { return (DWORD_PTR)g_appBase + (anchor - IMAGEBASE); }
+static uint16_t  ru16(DWORD_PTR va) { return *(uint16_t*)va; }
+static uint32_t  ru32(DWORD_PTR va) { return *(uint32_t*)va; }
+
+/* Find TypeInfo for a class by name: scans the image for the Pascal
+ * shortstring (length-prefixed) preceded by the tkClass kind byte (7). */
+static DWORD_PTR find_class_typeinfo(const char* name)
+{
+    size_t len = strlen(name);
+    if (len == 0 || len > 250) return 0;
+    BYTE* base = (BYTE*)g_appBase;
+    IMAGE_DOS_HEADER* dos = (IMAGE_DOS_HEADER*)g_appBase;
+    IMAGE_NT_HEADERS* nt = (IMAGE_NT_HEADERS*)((BYTE*)g_appBase + dos->e_lfanew);
+    size_t imageSize = nt->OptionalHeader.SizeOfImage;
+    for (size_t off = 0; off + 2 + len < imageSize; off++) {
+        if (base[off] == 0x07 && base[off + 1] == (BYTE)len &&
+            memcmp(base + off + 2, name, len) == 0)
+            return (DWORD_PTR)(base + off);
+    }
+    return 0;
+}
+
+/* Delphi published method table: [u16 count][{u16 size,u32 addr,shortstr name}] */
+static DWORD_PTR find_method_in_table(DWORD_PTR tableVa, const char* name)
+{
+    if (!tableVa) return 0;
+    uint16_t count = ru16(tableVa);
+    DWORD_PTR p = tableVa + 2;
+    size_t want = strlen(name);
+    for (int i = 0; i < count; i++) {
+        uint8_t nlen = *(uint8_t*)(p + 6);
+        const char* n = (const char*)(p + 7);
+        if (nlen == want && memcmp(n, name, nlen) == 0)
+            return ru32(p + 2);
+        p += 6 + 1 + nlen;
+    }
+    return 0;
+}
+
+/* Delphi published field table: [u16 count][u32 parentTable][{u32 off,u16 idx,shortstr name}] */
+static long find_field_in_table(DWORD_PTR tableVa, const char* name)
+{
+    if (!tableVa) return -1;
+    uint16_t count = ru16(tableVa);
+    DWORD_PTR p = tableVa + 2 + 4;      /* skip count + parent table pointer */
+    size_t want = strlen(name);
+    for (int i = 0; i < count; i++) {
+        uint32_t offset  = ru32(p);
+        uint8_t  nlen    = *(uint8_t*)(p + 6);
+        const char* n    = (const char*)(p + 7);
+        if (nlen == want && memcmp(n, name, nlen) == 0)
+            return (long)offset;
+        p += 6 + 1 + nlen;
+    }
+    return -1;
+}
+
+/* An FMX/Delphi object's first dword is its VMT (classType); the VMT base
+ * that the published tables hang off is classType - 12. */
+static DWORD_PTR obj_vmt_base(void* obj)
+{
+    if (!obj) return 0;
+    DWORD_PTR ct = 0;
+    __try { ct = *(DWORD_PTR*)obj; } __except(EXCEPTION_EXECUTE_HANDLER) { return 0; }
+    return ct ? ct - VMT_OFFSET : 0;
+}
+
+static DWORD_PTR find_method_generic(void* obj, const char* name)
+{
+    DWORD_PTR vb = obj_vmt_base(obj);
+    if (!vb) return 0;
+    return find_method_in_table(ru32(vb - OFF_VMT_METHODTABLE), name);
+}
+
+/* Walks the parent field-table chain too, so inherited fields resolve. */
+static long find_field_generic(void* obj, const char* name)
+{
+    DWORD_PTR vb = obj_vmt_base(obj);
+    if (!vb) return -1;
+    DWORD_PTR ft = ru32(vb - OFF_VMT_FIELDTABLE);
+    for (int depth = 0; ft && depth < 16; depth++) {
+        long off = find_field_in_table(ft, name);
+        if (off >= 0) return off;
+        ft = ru32(ft + 2);
+    }
+    return -1;
+}
+
+/* Best-effort class name of an object. FMX framework classes don't always
+ * put the name at the same VMT slot, so try a few candidate offsets. */
+static void obj_classname(void* obj, char* buf, size_t bufsz)
+{
+    buf[0] = 0;
+    if (!obj) return;
+    DWORD_PTR ct = 0;
+    __try { ct = *(DWORD_PTR*)obj; } __except(EXCEPTION_EXECUTE_HANDLER) { return; }
+    if (!ct) return;
+    DWORD_PTR vb = ct - VMT_OFFSET;
+    static const int candOffsets[] = { OFF_VMT_CLASSNAME, 0x30, 0x28, 0x34 };
+    for (int i = 0; i < 4; i++) {
+        DWORD_PTR cn = 0;
+        __try { cn = ru32(vb - candOffsets[i]); } __except(EXCEPTION_EXECUTE_HANDLER) { continue; }
+        if (!cn) continue;
+        uint8_t clen = 0;
+        __try { clen = *(uint8_t*)cn; } __except(EXCEPTION_EXECUTE_HANDLER) { continue; }
+        if (clen < 2 || clen > 64) continue;
+        int ok = 1;
+        for (int b = 0; b < clen; b++) {
+            char c = ((char*)cn)[1 + b];
+            if (!(c >= 0x20 && c < 0x7f)) { ok = 0; break; }
+        }
+        if (!ok) continue;
+        memcpy(buf, (void*)(cn + 1), clen);
+        buf[clen] = 0;
+        return;
+    }
+}
+
+/* Heap-scan for the first live instance of a class by its VMT pointer. */
+static void* scan_for_class_instance(DWORD_PTR vmt)
+{
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    DWORD_PTR addr = (DWORD_PTR)si.lpMinimumApplicationAddress;
+    DWORD_PTR maxA = (DWORD_PTR)si.lpMaximumApplicationAddress;
+    while (addr < maxA) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery((LPCVOID)addr, &mbi, sizeof(mbi)) == 0) break;
+        if (mbi.State == MEM_COMMIT && mbi.Type == MEM_PRIVATE) {
+            DWORD prot = mbi.Protect;
+            if (!(prot & (PAGE_GUARD | PAGE_NOACCESS)) &&
+                (prot & 0xFF) != PAGE_EXECUTE &&
+                (prot & 0xFF) != PAGE_EXECUTE_READ &&
+                (prot & 0xFF) != PAGE_EXECUTE_READWRITE) {
+                uint8_t* p = (uint8_t*)mbi.BaseAddress;
+                size_t size = mbi.RegionSize;
+                size_t i = 0;
+                while (i + sizeof(void*) <= size) {
+                    DWORD_PTR val = 0;
+                    __try { val = *(DWORD_PTR*)(p + i); }
+                    __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+                    if (val == vmt) {
+                        /* Rule out class-reference list entries: require a
+                           plausible instance size and room after the object. */
+                        DWORD_PTR vb = vmt - VMT_OFFSET;
+                        uint32_t isize = 0;
+                        __try { isize = *(uint32_t*)(vb - OFF_VMT_INSTANCESIZE); }
+                        __except(EXCEPTION_EXECUTE_HANDLER) { isize = 0; }
+                        if (isize >= 0x20 && isize <= 0x20000) {
+                            if ((size - i) >= isize + 0x40 && i >= 0x40)
+                                return (void*)(p + i);
+                        }
+                    }
+                    i += 4;
+                }
+            }
+        }
+        addr += mbi.RegionSize ? mbi.RegionSize : 0x1000;
+    }
+    return NULL;
+}
+
+/* The TMainForm anchor is found dynamically (image scan), so no hardcoded
+ * TypeInfo address is needed. */
+static int init_rtti(void)
+{
+    DWORD_PTR ti = find_class_typeinfo("TMainForm");    if (!ti) return 0;
+    if (*(uint8_t*)ti != 7) return 0;
+    uint8_t nlen = *(uint8_t*)(ti + 1);
+    uint32_t classType = ru32(ti + 2 + nlen);
+    g_vmtBase = (DWORD_PTR)classType - VMT_OFFSET;
+    DWORD_PTR cn = ru32(g_vmtBase - OFF_VMT_CLASSNAME);
+    if (!cn) return 0;
+    uint8_t clen = *(uint8_t*)cn;
+    if (clen == 9 && memcmp((void*)(cn + 1), "TMainForm", 9) == 0)
+        return 1;
+    return 0;
+}
+
+/* Heap-scan for TMainForm. The extra check on MainMenu1 (offset 0x2F8)
+ * distinguishes the real form from class-reference list entries, which also
+ * begin with the TMainForm VMT. */
+static void* scan_for_vmt_instance(void)
+{
+    DWORD_PTR vmt = g_vmtBase + VMT_OFFSET;
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    DWORD_PTR addr = (DWORD_PTR)si.lpMinimumApplicationAddress;
+    DWORD_PTR maxA = (DWORD_PTR)si.lpMaximumApplicationAddress;
+    while (addr < maxA) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery((LPCVOID)addr, &mbi, sizeof(mbi)) == 0) break;
+        if (mbi.State == MEM_COMMIT && mbi.Type == MEM_PRIVATE) {
+            DWORD prot = mbi.Protect;
+            if (!(prot & (PAGE_GUARD | PAGE_NOACCESS)) &&
+                (prot & 0xFF) != PAGE_EXECUTE &&
+                (prot & 0xFF) != PAGE_EXECUTE_READ &&
+                (prot & 0xFF) != PAGE_EXECUTE_READWRITE) {
+                uint8_t* p = (uint8_t*)mbi.BaseAddress;
+                size_t size = mbi.RegionSize;
+                size_t i = 0;
+                while (i + sizeof(void*) <= size) {
+                    DWORD_PTR val = 0;
+                    __try { val = *(DWORD_PTR*)(p + i); }
+                    __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+                    if (val == vmt) {
+                        void* cand = (void*)(p + i);
+                        DWORD_PTR cn = 0;
+                        __try { cn = *(DWORD_PTR*)(g_vmtBase - OFF_VMT_CLASSNAME); }
+                        __except(EXCEPTION_EXECUTE_HANDLER) { cn = 0; }
+                        if (!cn) { i += 4; continue; }
+                        uint8_t clen = 0;
+                        __try { clen = *(uint8_t*)cn; }
+                        __except(EXCEPTION_EXECUTE_HANDLER) { clen = 0; }
+                        if (clen != 9 || *(uint64_t*)(cn+1) != *(uint64_t*)"TMainFor") {
+                            i += 4; continue;
+                        }
+                        uint32_t isize = 0;
+                        __try { isize = *(uint32_t*)(g_vmtBase - OFF_VMT_INSTANCESIZE); }
+                        __except(EXCEPTION_EXECUTE_HANDLER) { isize = 0x724; }
+                        if (isize < 0x200) isize = 0x724;
+                        size_t room = size - i;
+                        if (room < isize + 0x40 || i < 0x40) { i += 4; continue; }
+                        /* A real form's MainMenu1 (off 0x2F8) points to a live
+                           object whose VMT is inside the pivot.exe image. */
+                        DWORD_PTR mm = 0;
+                        __try { mm = *(uint32_t*)((char*)cand + 0x2F8); }
+                        __except(EXCEPTION_EXECUTE_HANDLER) { mm = 0; }
+                        if (mm && (mm & 3) == 0) {
+                            DWORD_PTR mmvmt = 0;
+                            __try { mmvmt = *(uint32_t*)mm; }
+                            __except(EXCEPTION_EXECUTE_HANDLER) { mmvmt = 0; }
+                            if (mmvmt >= (DWORD_PTR)g_appBase &&
+                                mmvmt < (DWORD_PTR)g_appBase + 0x1000000)
+                                return cand;
+                        }
+                        i += 4;
+                    }
+                    i += 4;
+                }
+            }
+        }
+        addr += mbi.RegionSize ? mbi.RegionSize : 0x1000;
+    }
+    return NULL;
+}
+
+/* Delphi register calling convention: EAX=Self, EDX=arg1, ECX=arg2, the rest
+ * on the stack (pushed right-to-left). The callee cleans stack args via ret N.
+ * We call via `call ebx` so the method's ret N pops our stack args + the
+ * return address; the __cdecl caller (api_call) then cleans our 6 args. */
+__declspec(naked) static void* __cdecl delphi_call_n(void* self, void* fn,
+        void* a1, void* a2, const uint32_t* more, int nMore)
+{
+    __asm {
+        mov  eax, [esp+4]    /* self  */
+        mov  ebx, [esp+8]    /* fn    */
+        mov  edx, [esp+12]   /* a1    */
+        mov  ecx, [esp+16]   /* a2    */
+        mov  esi, [esp+20]   /* more  */
+        mov  edi, [esp+24]   /* nMore */
+        test edi, edi
+        jz   push_done
+        lea  esi, [esi + edi*4]
+    push_loop:
+        sub  esi, 4
+        push dword ptr [esi]
+        dec  edi
+        jnz  push_loop
+    push_done:
+        call ebx
+        ret
+    }
+}
+
+static void* delphi_call(void* self, void* fn, void* a1, void* a2)
+{
+    return delphi_call_n(self, fn, a1, a2, NULL, 0);
+}
+
+/* --------------------------------------------------------------------------
+ * Method hooking (inline detour)
+ *
+ * A published method's entry is patched with a 5-byte `E9 rel32` jump to a
+ * per-hook stub. The stub saves the register args to globals, calls a C
+ * callback that runs the Lua hook, then either:
+ *   - returns the Lua value (override; original is skipped), or
+ *   - reloads the args and jumps into a trampoline that replays the original
+ *     prologue bytes and continues at method+6.
+ *
+ * The trampoline copies 6 bytes (not 5) so we never split a multi-byte
+ * instruction from the original prologue.
+ * ------------------------------------------------------------------------ */
+
+#define MAX_HOOKS 32
+typedef struct {
+    DWORD_PTR method;
+    BYTE      orig[6];     /* original prologue bytes */
+    BYTE*     trampMem;    /* executable trampoline */
+    int       luaRef;
+    int       inUse;
+} HookRec;
+
+static HookRec g_hooks[MAX_HOOKS];
+static BYTE*  g_hookStubs[MAX_HOOKS];
+static DWORD_PTR g_hookResult;
+static DWORD_PTR g_saveSelf, g_saveA1, g_saveA2;
+
+static int hook_callback4(int idx)
+{
+    HookRec* h = &g_hooks[idx];
+    if (!g_L || h->luaRef == LUA_NOREF) return 0;
+    lua_rawgeti(g_L, LUA_REGISTRYINDEX, h->luaRef);
+    if (!lua_isfunction(g_L, -1)) { lua_pop(g_L, 1); return 0; }
+    lua_pushlightuserdata(g_L, (void*)g_saveSelf);
+    lua_pushinteger(g_L, (lua_Integer)g_saveA1);
+    lua_pushinteger(g_L, (lua_Integer)g_saveA2);
+    if (lua_pcall(g_L, 3, 1, 0) != LUA_OK) {
+        if (g_log) { fprintf(g_log, "hook err: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+        lua_pop(g_L, 1);
+        return 0;
+    }
+    int overrode = !lua_isnil(g_L, -1);
+    if (overrode) g_hookResult = (DWORD_PTR)lua_tointeger(g_L, -1);
+    lua_pop(g_L, 1);
+    return overrode;
+}
+
+static int install_hook(void* obj, const char* methodName, int luaRef)
+{
+    DWORD_PTR fn = find_method_generic(obj, methodName);
+    if (!fn) return 0;
+
+    int idx = -1;
+    for (int i = 0; i < MAX_HOOKS; i++) if (!g_hooks[i].inUse) { idx = i; break; }
+    if (idx < 0) return 0;
+
+    HookRec* h = &g_hooks[idx];
+    memset(h, 0, sizeof(*h));
+    h->method = fn;
+    h->luaRef = luaRef;
+    h->inUse = 1;
+
+    memcpy(h->orig, (void*)fn, 6);
+
+    h->trampMem = (BYTE*)VirtualAlloc(NULL, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!h->trampMem) { h->inUse = 0; return 0; }
+    memcpy(h->trampMem, h->orig, 6);
+    h->trampMem[6] = 0xE9;
+    *(int32_t*)(h->trampMem + 7) = (int32_t)((BYTE*)(fn + 6) - (h->trampMem + 11));
+
+    /* Hand-assembled per-hook stub. rel32 displacements are patched below
+     * once we know the stub's final address in memory. */
+    BYTE stub[96];
+    int p = 0;
+    stub[p++] = 0xA3;                                    /* mov [g_saveSelf], eax */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveSelf; p += 4;
+    stub[p++] = 0x89; stub[p++] = 0x15;                  /* mov [g_saveA1], edx */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveA1; p += 4;
+    stub[p++] = 0x89; stub[p++] = 0x0D;                  /* mov [g_saveA2], ecx */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveA2; p += 4;
+    /* call hook_callback4(idx); push idx last so the arg is at [esp+4], and
+       keep the stack 16-byte aligned for the C function. */
+    stub[p++] = 0x83; stub[p++] = 0xEC; stub[p++] = 0x0C; /* sub esp,12 */
+    stub[p++] = 0x68; *(uint32_t*)(stub + p) = (uint32_t)idx; p += 4;  /* push idx */
+    int callInstr = p;
+    stub[p++] = 0xE8;
+    int callDisp = p;
+    stub[p++] = 0x00; stub[p++] = 0x00; stub[p++] = 0x00; stub[p++] = 0x00;
+    stub[p++] = 0x83; stub[p++] = 0xC4; stub[p++] = 0x10; /* add esp,16 */
+    stub[p++] = 0x85; stub[p++] = 0xC0;                  /* test eax,eax */
+    stub[p++] = 0x74; stub[p++] = 0x06;                  /* je +6 -> call_original */
+    stub[p++] = 0xA1;                                    /* mov eax,[g_hookResult] */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_hookResult; p += 4;
+    stub[p++] = 0xC3;                                    /* ret */
+    stub[p++] = 0xA1;                                    /* mov eax,[g_saveSelf] */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveSelf; p += 4;
+    stub[p++] = 0x8B; stub[p++] = 0x15;                  /* mov edx,[g_saveA1] */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveA1; p += 4;
+    stub[p++] = 0x8B; stub[p++] = 0x0D;                  /* mov ecx,[g_saveA2] */
+    *(uint32_t*)(stub + p) = (uint32_t)(DWORD_PTR)&g_saveA2; p += 4;
+    int jmpInstr = p;
+    stub[p++] = 0xE9;
+    int jmpDisp = p;
+    stub[p++] = 0x00; stub[p++] = 0x00; stub[p++] = 0x00; stub[p++] = 0x00;
+
+    BYTE* stubMem = (BYTE*)VirtualAlloc(NULL, p, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!stubMem) { h->inUse = 0; return 0; }
+    memcpy(stubMem, stub, p);
+    g_hookStubs[idx] = stubMem;
+
+    /* disp = target - (address after the instruction) */
+    *(int32_t*)(stubMem + callDisp) = (int32_t)((BYTE*)hook_callback4 - (stubMem + callInstr + 5));
+    *(int32_t*)(stubMem + jmpDisp) = (int32_t)(h->trampMem - (stubMem + jmpInstr + 5));
+
+    DWORD old;
+    if (!VirtualProtect((void*)fn, 5, PAGE_EXECUTE_READWRITE, &old)) {
+        VirtualFree(stubMem, 0, MEM_RELEASE); h->inUse = 0; return 0;
+    }
+    *(BYTE*)fn = 0xE9;
+    *(int32_t*)(fn + 1) = (int32_t)(stubMem - ((BYTE*)fn + 5));
+    VirtualProtect((void*)fn, 5, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), (void*)fn, 5);
+
+    if (g_log) { fprintf(g_log, "pivotkit: hooked %s @ %p\n", methodName, (void*)fn); fflush(g_log); }
+    return 1;
+}
+
+static int unhook_hookidx(int hookIdx)
+{
+    HookRec* h = &g_hooks[hookIdx];
+    if (!h->inUse) return 0;
+    DWORD old;
+    if (VirtualProtect((void*)h->method, 5, PAGE_EXECUTE_READWRITE, &old)) {
+        memcpy((void*)h->method, h->orig, 5);
+        VirtualProtect((void*)h->method, 5, old, &old);
+        FlushInstructionCache(GetCurrentProcess(), (void*)h->method, 5);
+    }
+    if (g_hookStubs[hookIdx]) VirtualFree(g_hookStubs[hookIdx], 0, MEM_RELEASE);
+    if (h->trampMem) VirtualFree(h->trampMem, 0, MEM_RELEASE);
+    if (g_L && h->luaRef != LUA_NOREF) luaL_unref(g_L, LUA_REGISTRYINDEX, h->luaRef);
+    h->inUse = 0;
+    return 1;
+}
+
+/* --------------------------------------------------------------------------
+ * Generic sprite overlays + floating menu button
+ *
+ * `pivot.sprite(path)` loads an image into a layered always-on-top window and
+ * returns a Lua object you can move, give a velocity (px/frame), bounce off
+ * the Pivot window edges, show/hide, and destroy. `pivot.add_menu_button`
+ * puts a small button on the Pivot window that calls a Lua function.
+ * ------------------------------------------------------------------------ */
+
+#define MAX_SPRITES 16
+
+typedef struct {
+    HWND     hwnd;
+    HBITMAP  bmp;
+    int      w, h;
+    double   x, y, vx, vy;
+    int      bounce;
+    int      alive;
+} Sprite;
+
+static Sprite    g_sprites[MAX_SPRITES];
+static HWND      g_btnHwnd = NULL;
+static WNDPROC   g_btnProc = NULL;
+static int       g_btnLuaRef = LUA_NOREF;
+static ULONG_PTR g_gdiplusToken = 0;
+
+/* Find the main Pivot window: the LARGEST visible top-level window of this
+ * process with a title. FMX also creates hidden/zero-size helper windows, so
+ * "first visible" is unreliable — the main form is the biggest one. */
+struct MainWinSearch { LONG area; HWND hwnd; };
+
+static BOOL CALLBACK main_win_enum(HWND h, LPARAM l)
+{
+    MainWinSearch* s = (MainWinSearch*)l;
+    DWORD wpid = 0;
+    GetWindowThreadProcessId(h, &wpid);
+    if (wpid != GetCurrentProcessId()) return TRUE;
+    if (!IsWindowVisible(h)) return TRUE;
+    if (GetWindowTextLengthW(h) < 1) return TRUE;
+    RECT rc;
+    GetWindowRect(h, &rc);
+    LONG area = (rc.right - rc.left) * (rc.bottom - rc.top);
+    if (area > s->area) { s->area = area; s->hwnd = h; }
+    return TRUE;
+}
+
+static HWND find_main_hwnd(void)
+{
+    MainWinSearch st = { 0, NULL };
+    EnumWindows(main_win_enum, (LPARAM)&st);
+    return st.hwnd;
+}
+
+static void resolve_path(char* out, size_t outsz, const char* rel)
+{
+    if (rel[0] == '\\' || (rel[0] != 0 && rel[1] == ':')) {
+        strncpy(out, rel, outsz - 1);
+        out[outsz - 1] = 0;
+        return;
+    }
+    GetModuleFileNameA((HMODULE)g_appBase, out, (DWORD)outsz);
+    char* slash = strrchr(out, '\\');
+    if (slash) *slash = '\0';
+    strncat(out, "\\", outsz - strlen(out) - 1);
+    strncat(out, rel, outsz - strlen(out) - 1);
+}
+
+/* Main Pivot window's client rect in SCREEN coordinates. Layered windows are
+ * positioned in screen space, so sprites must be tracked in screen space too. */
+static void get_main_client_screen_rect(RECT* out)
+{
+    HWND main = find_main_hwnd();
+    RECT rc = {0, 0, 800, 600};
+    if (main) GetClientRect(main, &rc);
+    POINT tl = {0, 0};
+    if (main) ClientToScreen(main, &tl);
+    out->left   = tl.x;
+    out->top    = tl.y;
+    out->right  = tl.x + rc.right;
+    out->bottom = tl.y + rc.bottom;
+}
+
+static LRESULT CALLBACK sprite_wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
+{
+    if (msg == WM_NCHITTEST) return HTTRANSPARENT;   /* clicks pass through */
+    return DefWindowProcW(h, msg, wp, lp);
+}
+
+static void sprite_register_class(void)
+{
+    static bool done = false;
+    if (done) return;
+    WNDCLASSW wc = {0};
+    wc.lpfnWndProc = sprite_wndproc;
+    wc.hInstance = GetModuleHandleW(NULL);
+    wc.lpszClassName = L"PivotKitSprite";
+    RegisterClassW(&wc);
+    done = true;
+}
+
+static int api_sprite(lua_State* L)
+{
+    const char* rel = luaL_checkstring(L, 1);
+    char path[MAX_PATH];
+    resolve_path(path, sizeof(path), rel);
+    if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES)
+        return luaL_error(L, "pivot.sprite: no such file: %s", path);
+
+    int slot = -1;
+    for (int i = 0; i < MAX_SPRITES; i++) if (!g_sprites[i].alive) { slot = i; break; }
+    if (slot < 0) return luaL_error(L, "pivot.sprite: too many sprites (max %d)", MAX_SPRITES);
+
+    if (g_gdiplusToken == 0) {
+        GdiplusStartupInput in;
+        if (GdiplusStartup(&g_gdiplusToken, &in, NULL) != Ok)
+            return luaL_error(L, "pivot.sprite: GDI+ init failed");
+    }
+
+    WCHAR wpath[MAX_PATH];
+    MultiByteToWideChar(CP_ACP, 0, path, -1, wpath, MAX_PATH);
+    Bitmap* img = Bitmap::FromFile(wpath);
+    if (img->GetLastStatus() != Ok) {
+        delete img;
+        return luaL_error(L, "pivot.sprite: failed to decode %s", path);
+    }
+    int w = (int)img->GetWidth();
+    int h = (int)img->GetHeight();
+    if (w < 1 || h < 1 || w > 2048 || h > 2048) {
+        delete img;
+        return luaL_error(L, "pivot.sprite: bad image size");
+    }
+
+    /* Render into a 32-bit DIB so the layered window can use it. */
+    BITMAPINFO bi;
+    ZeroMemory(&bi, sizeof(bi));
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = -h;              /* top-down */
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    void* bits = NULL;
+    HDC dibDC = CreateCompatibleDC(NULL);
+    HBITMAP bmp = CreateDIBSection(dibDC, &bi, DIB_RGB_COLORS, &bits, NULL, 0);
+    HBITMAP old = (HBITMAP)SelectObject(dibDC, bmp);
+    {
+        Graphics g(dibDC);
+        g.SetCompositingMode(CompositingModeSourceCopy);
+        g.DrawImage(img, 0, 0, w, h);
+    }
+    delete img;
+
+    sprite_register_class();
+    HWND hwnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TRANSPARENT,
+        L"PivotKitSprite", L"", WS_POPUP,
+        0, 0, w, h, NULL, NULL, GetModuleHandleW(NULL), NULL);
+    if (!hwnd) {
+        SelectObject(dibDC, old);
+        DeleteObject(bmp);
+        DeleteDC(dibDC);
+        return luaL_error(L, "pivot.sprite: CreateWindowEx failed");
+    }
+
+    Sprite* s = &g_sprites[slot];
+    s->hwnd = hwnd;
+    s->bmp = bmp;
+    s->w = w;
+    s->h = h;
+    s->x = 0;
+    s->y = 0;
+    s->vx = 0;
+    s->vy = 0;
+    s->bounce = 0;
+    s->alive = 1;
+
+    HDC screen = GetDC(NULL);
+    SIZE sz = { w, h };
+    POINT dst = { 0, 0 };
+    POINT src = { 0, 0 };
+    BLENDFUNCTION bf = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+    UpdateLayeredWindow(hwnd, screen, &dst, &sz, dibDC, &src, 0, &bf, ULW_ALPHA);
+    ReleaseDC(NULL, screen);
+    SelectObject(dibDC, old);
+    DeleteDC(dibDC);
+    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+
+    lua_pushinteger(L, slot + 1);    /* 1-based sprite handle */
+    return 1;
+}
+
+/* Destroy a sprite by handle. Returns 1 if found. */
+static int sprite_destroy_handle(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive)
+        return 0;
+    Sprite* s = &g_sprites[slot];
+    DestroyWindow(s->hwnd);
+    DeleteObject(s->bmp);
+    memset(s, 0, sizeof(*s));
+    return 1;
+}
+
+static int api_sprite_move(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive)
+        return 0;
+    Sprite* s = &g_sprites[slot];
+    s->x = luaL_checknumber(L, 2);
+    s->y = luaL_checknumber(L, 3);
+    SetWindowPos(s->hwnd, HWND_TOPMOST, (int)s->x, (int)s->y, 0, 0,
+                 SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+    return 0;
+}
+
+static int api_sprite_vel(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive)
+        return 0;
+    g_sprites[slot].vx = luaL_checknumber(L, 2);
+    g_sprites[slot].vy = luaL_checknumber(L, 3);
+    return 0;
+}
+
+static int api_sprite_bounce(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive)
+        return 0;
+    g_sprites[slot].bounce = lua_toboolean(L, 2) ? 1 : 0;
+    return 0;
+}
+
+static int api_sprite_show(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive) return 0;
+    ShowWindow(g_sprites[slot].hwnd, SW_SHOWNOACTIVATE);
+    return 0;
+}
+
+static int api_sprite_hide(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive) return 0;
+    ShowWindow(g_sprites[slot].hwnd, SW_HIDE);
+    return 0;
+}
+
+static LRESULT CALLBACK btn_wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
+{
+    if (msg == WM_LBUTTONUP && g_L && g_btnLuaRef != LUA_NOREF) {
+        lua_rawgeti(g_L, LUA_REGISTRYINDEX, g_btnLuaRef);
+        if (lua_isfunction(g_L, -1)) {
+            if (lua_pcall(g_L, 0, 0, 0) != LUA_OK) {
+                if (g_log) { fprintf(g_log, "pivotkit: button err: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+                lua_pop(g_L, 1);
+            }
+        } else lua_pop(g_L, 1);
+    }
+    return CallWindowProcW(g_btnProc, h, msg, wp, lp);
+}
+
+/* Create (or retitle) the floating button on the main window. */
+static int api_add_menu_button(lua_State* L)
+{
+    const char* label = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    if (g_btnLuaRef != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, g_btnLuaRef);
+    lua_pushvalue(L, 2);
+    g_btnLuaRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    HWND main = find_main_hwnd();
+    if (!main) return luaL_error(L, "pivot.add_menu_button: main window not found");
+
+    if (!g_btnHwnd) {
+        g_btnHwnd = CreateWindowExW(0, L"BUTTON", L"",
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            0, 0, 110, 24, main, NULL, GetModuleHandleW(NULL), NULL);
+        if (g_btnHwnd)
+            g_btnProc = (WNDPROC)SetWindowLongPtrW(g_btnHwnd, GWLP_WNDPROC, (LONG_PTR)btn_wndproc);
+    }
+    SetWindowTextA(g_btnHwnd, label);
+
+    /* Pin it to the top-right of the window; re-anchored on every tick. */
+    RECT rc; GetClientRect(main, &rc);
+    MoveWindow(g_btnHwnd, rc.right - 122, 8, 110, 24, TRUE);
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int api_remove_menu_button(lua_State* L)
+{
+    if (g_btnHwnd) { DestroyWindow(g_btnHwnd); g_btnHwnd = NULL; }
+    if (g_btnLuaRef != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, g_btnLuaRef);
+    g_btnLuaRef = LUA_NOREF;
+    return 0;
+}
+
+static int api_sprite_pos(lua_State* L)
+{
+    int slot = (int)luaL_checkinteger(L, 1) - 1;
+    if (slot < 0 || slot >= MAX_SPRITES || !g_sprites[slot].alive) {
+        lua_pushnumber(L, 0); lua_pushnumber(L, 0);
+        return 2;
+    }
+    lua_pushnumber(L, g_sprites[slot].x);
+    lua_pushnumber(L, g_sprites[slot].y);
+    return 2;
+}
+
+/* Main window client area in screen coords: left, top, right, bottom. */
+static int api_window_rect(lua_State* L)
+{
+    RECT rc;
+    get_main_client_screen_rect(&rc);
+    lua_pushinteger(L, rc.left);
+    lua_pushinteger(L, rc.top);
+    lua_pushinteger(L, rc.right);
+    lua_pushinteger(L, rc.bottom);
+    return 4;
+}
+
+/* Stepped each frame: move sprites with velocity and bounce them. */
+static void sprites_tick(void)
+{
+    for (int i = 0; i < MAX_SPRITES; i++) {
+        Sprite* s = &g_sprites[i];
+        if (!s->alive || (s->vx == 0 && s->vy == 0)) continue;
+
+        s->x += s->vx;
+        s->y += s->vy;
+
+        if (s->bounce) {
+            RECT rc;
+            get_main_client_screen_rect(&rc);
+            double minX = rc.left, minY = rc.top;
+            double maxX = rc.right - s->w, maxY = rc.bottom - s->h;
+            if (s->x < minX)         { s->x = minX; s->vx = -s->vx; }
+            if (s->y < minY)         { s->y = minY; s->vy = -s->vy; }
+            if (s->x > maxX)         { s->x = maxX; s->vx = -s->vx; }
+            if (s->y > maxY)         { s->y = maxY; s->vy = -s->vy; }
+        }
+
+        SetWindowPos(s->hwnd, HWND_TOPMOST, (int)s->x, (int)s->y, 0, 0,
+                     SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+    }
+
+    /* Keep the button pinned to the top-right of the window (client coords). */
+    HWND main = find_main_hwnd();
+    if (main && g_btnHwnd) {
+        RECT cr;
+        GetClientRect(main, &cr);
+        MoveWindow(g_btnHwnd, cr.right - 122, 8, 110, 24, FALSE);
+    }
+}
+
+/* Per-frame Lua tick via a PeekMessageW IAT hook. */
+typedef BOOL (WINAPI *PeekMessageWFn)(LPMSG, HWND, UINT, UINT, UINT);
+static PeekMessageWFn g_origPeekMessageW = NULL;
+
+static volatile LONG g_pendingLoad = 0;
+static char g_modDir[MAX_PATH] = {0};
+static LONG g_loadFrameDelay = 0;
+
+static void load_mods(const char* modDir);
+
+static BOOL WINAPI HookedPeekMessageW(LPMSG lpMsg, HWND hWnd, UINT wMin,
+                                      UINT wMax, UINT wRemove)
+{
+    BOOL r = g_origPeekMessageW(lpMsg, hWnd, wMin, wMax, wRemove);
+
+    LONG frame = InterlockedIncrement(&g_frame);
+
+    /* Load mods once, a few frames after startup so the FMX form (and its
+       fields) are fully built. Runs on the main thread, so mod code may call
+       Delphi methods safely. */
+    if (g_pendingLoad) {
+        if (g_loadFrameDelay > 0) {
+            g_loadFrameDelay--;
+        } else if (InterlockedCompareExchange(&g_pendingLoad, 0, 1) == 1) {
+            void* fresh = scan_for_vmt_instance();
+            if (fresh) g_mainForm = fresh;
+            if (g_log) { fprintf(g_log, "pivotkit: mainForm (final) = %p\n", g_mainForm); fflush(g_log); }
+            if (g_L) load_mods(g_modDir);
+            if (g_log) { fprintf(g_log, "pivotkit: ready\n"); fflush(g_log); }
+        }
+    }
+
+    if (g_L) {
+        lua_getglobal(g_L, "__pivot_update__");
+        if (lua_isfunction(g_L, -1)) {
+            lua_pushinteger(g_L, (lua_Integer)frame);
+            if (lua_pcall(g_L, 1, 0, 0) != LUA_OK) {
+                if (g_log) { fprintf(g_log, "update err: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+                lua_pop(g_L, 1);
+            }
+        } else lua_pop(g_L, 1);
+    }
+
+    /* Step sprites (bouncing demo) and keep the button anchored. */
+    sprites_tick();
+
+    return r;
+}
+
+/* Patch pivot.exe's IAT slot for user32!PeekMessageW. */
+static int hook_peek_message(void)
+{
+    IMAGE_DOS_HEADER* dos = (IMAGE_DOS_HEADER*)g_appBase;
+    IMAGE_NT_HEADERS* nt  = (IMAGE_NT_HEADERS*)((BYTE*)g_appBase + dos->e_lfanew);
+    IMAGE_IMPORT_DESCRIPTOR* imp = (IMAGE_IMPORT_DESCRIPTOR*)
+        ((BYTE*)g_appBase + nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+    for (; imp->Name; imp++) {
+        const char* dll;
+        __try { dll = (const char*)g_appBase + imp->Name; }
+        __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+        if (_stricmp(dll, "user32.dll") != 0) continue;
+        IMAGE_THUNK_DATA *oft, *thunk;
+        __try {
+            oft = (IMAGE_THUNK_DATA*)((BYTE*)g_appBase +
+                      (imp->OriginalFirstThunk ? imp->OriginalFirstThunk : imp->FirstThunk));
+            thunk = (IMAGE_THUNK_DATA*)((BYTE*)g_appBase + imp->FirstThunk);
+        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+        for (int idx = 0; ; idx++) {
+            DWORD_PTR ofVal, iatVal, addrOfData;
+            __try {
+                ofVal = oft[idx].u1.AddressOfData;
+                iatVal = thunk[idx].u1.Function;
+            } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
+            if (ofVal == 0 && iatVal == 0) break;
+            if (IMAGE_SNAP_BY_ORDINAL(ofVal)) continue;
+            IMAGE_IMPORT_BY_NAME* ibn;
+            __try { ibn = (IMAGE_IMPORT_BY_NAME*)((BYTE*)g_appBase + ofVal); }
+            __except(EXCEPTION_EXECUTE_HANDLER) { continue; }
+            __try {
+                if (strcmp((char*)ibn->Name, "PeekMessageW") == 0) {
+                    DWORD old;
+                    g_origPeekMessageW = (PeekMessageWFn)iatVal;
+                    if (VirtualProtect(&thunk[idx].u1.Function, sizeof(void*), PAGE_READWRITE, &old)) {
+                        thunk[idx].u1.Function = (ULONG_PTR)HookedPeekMessageW;
+                        VirtualProtect(&thunk[idx].u1.Function, sizeof(void*), old, &old);
+                        return 1;
+                    }
+                }
+            } __except(EXCEPTION_EXECUTE_HANDLER) { continue; }
+        }
+    }
+    return 0;
+}
+
+/* --------------------------------------------------------------------------
+ * Lua API
+ * ------------------------------------------------------------------------ */
+
+static int api_log(lua_State* L)
+{
+    int n = lua_gettop(L);
+    for (int i = 1; i <= n; i++) {
+        size_t len; const char* s = lua_tolstring(L, i, &len);
+        if (g_log) { fwrite(s, 1, len, g_log); if (i < n) fputc('\t', g_log); fflush(g_log); }
+    }
+    if (g_log) fputc('\n', g_log);
+    return 0;
+}
+
+static int api_get_main_form(lua_State* L)
+{
+    if (!g_mainForm) g_mainForm = scan_for_vmt_instance();
+    lua_pushlightuserdata(L, g_mainForm);
+    return 1;
+}
+
+static int api_call(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* method = luaL_checkstring(L, 2);
+    int n = lua_gettop(L) - 2;
+    if (n < 0) n = 0;
+    if (n > 32) n = 32;
+    if (!self) return luaL_error(L, "pivot.call: nil object");
+
+    DWORD_PTR fn = find_method_generic(self, method);
+    if (!fn) return luaL_error(L, "pivot.call: method '%s' not found on %p", method, self);
+
+    uint32_t a1 = 0, a2 = 0;
+    uint32_t more[30];
+    int nMore = 0;
+    if (n >= 1) a1 = (uint32_t)luaL_checkinteger(L, 3);
+    if (n >= 2) a2 = (uint32_t)luaL_checkinteger(L, 4);
+    for (int i = 3; i <= n; i++) {
+        more[nMore++] = (uint32_t)luaL_checkinteger(L, i + 2);
+    }
+
+    void* r = NULL;
+    unsigned code = 0;
+    DWORD_PTR crashAddr = 0;
+    __try {
+        r = delphi_call_n(self, (void*)fn, (void*)(DWORD_PTR)a1, (void*)(DWORD_PTR)a2,
+                          more, nMore);
+    }
+    __except((crashAddr = (DWORD_PTR)GetExceptionInformation()->ExceptionRecord->ExceptionAddress,
+              code = (unsigned)GetExceptionCode(),
+              EXCEPTION_EXECUTE_HANDLER)) {
+        char msg[160];
+        if (g_log) {
+            fprintf(g_log, "pivotkit: exception (code 0x%08X at 0x%p) from %s\n",
+                    code, (void*)crashAddr, method);
+            fflush(g_log);
+        }
+        _snprintf(msg, sizeof(msg), "pivot.call: Delphi exception 0x%08X at 0x%p from '%s'",
+                  code, (void*)crashAddr, method);
+        return luaL_error(L, "%s", msg);
+    }
+    lua_pushinteger(L, (lua_Integer)(DWORD_PTR)r);
+    return 1;
+}
+
+static int api_get_field(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    if (!self) return luaL_error(L, "pivot.get_field: nil object");
+    long off = find_field_generic(self, name);
+    if (off < 0) { lua_pushnil(L); return 1; }
+    uint32_t v = 0;
+    __try { v = *(uint32_t*)((char*)self + off); }
+    __except(EXCEPTION_EXECUTE_HANDLER) { lua_pushnil(L); return 1; }
+    lua_pushinteger(L, (lua_Integer)v);
+    return 1;
+}
+
+static int api_set_field(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    lua_Integer v = luaL_checkinteger(L, 3);
+    if (!self) return luaL_error(L, "pivot.set_field: nil object");
+    long off = find_field_generic(self, name);
+    if (off < 0) return luaL_error(L, "pivot.set_field: field '%s' not found", name);
+    __try { *(uint32_t*)((char*)self + off) = (uint32_t)v; }
+    __except(EXCEPTION_EXECUTE_HANDLER) {
+        return luaL_error(L, "pivot.set_field: AV writing '%s'", name);
+    }
+    return 0;
+}
+
+static int api_on_update(lua_State* L)
+{
+    luaL_checktype(L, 1, LUA_TFUNCTION);
+    lua_pushvalue(L, 1);
+    lua_setglobal(L, "__pivot_update__");
+    return 0;
+}
+
+static int api_frame_number(lua_State* L)
+{
+    lua_pushinteger(L, (lua_Integer)g_frame);
+    return 1;
+}
+
+static int api_read_u32(lua_State* L)
+{
+    DWORD_PTR addr = (DWORD_PTR)luaL_checkinteger(L, 1);
+    uint32_t v = 0;
+    __try { v = *(uint32_t*)addr; } __except(EXCEPTION_EXECUTE_HANDLER) { lua_pushnil(L); return 1; }
+    lua_pushinteger(L, (lua_Integer)v);
+    return 1;
+}
+
+static int api_write_u32(lua_State* L)
+{
+    DWORD_PTR addr = (DWORD_PTR)luaL_checkinteger(L, 1);
+    uint32_t v = (uint32_t)luaL_checkinteger(L, 2);
+    DWORD old;
+    __try {
+        if (VirtualProtect((void*)addr, 4, PAGE_EXECUTE_READWRITE, &old)) {
+            *(uint32_t*)addr = v;
+            VirtualProtect((void*)addr, 4, old, &old);
+        }
+    } __except(EXCEPTION_EXECUTE_HANDLER) { return luaL_error(L, "pivot.write_u32: AV at %p", (void*)addr); }
+    return 0;
+}
+
+static int api_read_ptr(lua_State* L)
+{
+    DWORD_PTR addr = (DWORD_PTR)luaL_checkinteger(L, 1);
+    DWORD_PTR v = 0;
+    __try { v = *(DWORD_PTR*)addr; } __except(EXCEPTION_EXECUTE_HANDLER) { lua_pushnil(L); return 1; }
+    lua_pushinteger(L, (lua_Integer)v);
+    return 1;
+}
+
+static int api_read_string(lua_State* L)
+{
+    DWORD_PTR addr = (DWORD_PTR)luaL_checkinteger(L, 1);
+    char buf[512];
+    __try {
+        uint8_t l = *(uint8_t*)addr;          /* Delphi shortstring: len byte, then bytes */
+        if (l > 511) l = 511;
+        memcpy(buf, (void*)(addr + 1), l);
+        buf[l] = 0;
+    } __except(EXCEPTION_EXECUTE_HANDLER) { lua_pushnil(L); return 1; }
+    lua_pushstring(L, buf);
+    return 1;
+}
+
+static int api_classname(lua_State* L)
+{
+    void* obj = lua_touserdata(L, 1);
+    char buf[64];
+    obj_classname(obj, buf, sizeof(buf));
+    lua_pushstring(L, buf);
+    return 1;
+}
+
+static int api_find_instance(lua_State* L)
+{
+    DWORD_PTR vmt = 0;
+    if (lua_isuserdata(L, 1)) {
+        void* sample = lua_touserdata(L, 1);
+        DWORD_PTR vb = obj_vmt_base(sample);
+        vmt = vb ? vb + VMT_OFFSET : 0;
+    } else {
+        vmt = (DWORD_PTR)luaL_checkinteger(L, 1);
+    }
+    void* inst = scan_for_class_instance(vmt);
+    lua_pushlightuserdata(L, inst);
+    return 1;
+}
+
+static int api_field_offset(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    long off = find_field_generic(self, name);
+    if (off < 0) { lua_pushnil(L); return 1; }
+    lua_pushinteger(L, off);
+    return 1;
+}
+
+static int api_method_addr(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    DWORD_PTR fn = find_method_generic(self, name);
+    if (!fn) { lua_pushnil(L); return 1; }
+    lua_pushinteger(L, (lua_Integer)fn);
+    return 1;
+}
+
+static int api_key_press(lua_State* L)
+{
+    BYTE vk = (BYTE)luaL_checkinteger(L, 1);
+    INPUT in = {0};
+    in.type = INPUT_KEYBOARD;
+    in.ki.wVk = vk;
+    SendInput(1, &in, sizeof(in));
+    in.ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(1, &in, sizeof(in));
+    return 0;
+}
+
+static int api_key_down(lua_State* L)
+{
+    BYTE vk = (BYTE)luaL_checkinteger(L, 1);
+    lua_pushboolean(L, (GetAsyncKeyState(vk) & 0x8000) != 0);
+    return 1;
+}
+
+static int api_class(lua_State* L)
+{
+    const char* name = luaL_checkstring(L, 1);
+    DWORD_PTR ti = find_class_typeinfo(name);
+    if (!ti) { lua_pushnil(L); return 1; }
+    uint8_t nlen = *(uint8_t*)(ti + 1);
+    uint32_t classType = ru32(ti + 2 + nlen);
+    lua_pushinteger(L, (lua_Integer)classType);
+    return 1;
+}
+
+static int api_sleep(lua_State* L)
+{
+    Sleep((DWORD)luaL_checkinteger(L, 1));
+    return 0;
+}
+
+static int api_hook(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* method = luaL_checkstring(L, 2);
+    luaL_checktype(L, 3, LUA_TFUNCTION);
+    if (!self) return luaL_error(L, "pivot.hook: nil object");
+    lua_pushvalue(L, 3);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    if (!install_hook(self, method, ref)) {
+        luaL_unref(L, LUA_REGISTRYINDEX, ref);
+        return luaL_error(L, "pivot.hook: method '%s' not found", method);
+    }
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int api_unhook(lua_State* L)
+{
+    void* self = lua_touserdata(L, 1);
+    const char* method = luaL_checkstring(L, 2);
+    DWORD_PTR fn = self ? find_method_generic(self, method) : 0;
+    for (int i = 0; i < MAX_HOOKS; i++) {
+        if (g_hooks[i].inUse && g_hooks[i].method == fn) {
+            unhook_hookidx(i);
+            lua_pushboolean(L, 1);
+            return 1;
+        }
+    }
+    lua_pushboolean(L, 0);
+    return 1;
+}
+
+/* Load every *.lua in the mods directory. */
+static void load_mods(const char* modDir)
+{
+    char pattern[MAX_PATH];
+    _snprintf(pattern, sizeof(pattern), "%s\\*.lua", modDir);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern, &fd);
+    if (h == INVALID_HANDLE_VALUE) return;
+    do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        char path[MAX_PATH];
+        _snprintf(path, sizeof(path), "%s\\%s", modDir, fd.cFileName);
+        if (g_log) { fprintf(g_log, "pivotkit: loading mod %s\n", fd.cFileName); fflush(g_log); }
+        if (luaL_dofile(g_L, path) != LUA_OK) {
+            if (g_log) { fprintf(g_log, "pivotkit: mod error: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+            lua_pop(g_L, 1);
+        }
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+}
+
+/* Worker thread: resolve RTTI, find the form, set up Lua, arm the hooks. */
+static DWORD WINAPI loader_thread(LPVOID param)
+{
+    (void)param;
+
+    if (!init_rtti()) {
+        if (g_log) { fprintf(g_log, "pivotkit: RTTI init failed\n"); fflush(g_log); }
+        return 0;
+    }
+
+    g_mainForm = scan_for_vmt_instance();
+    if (g_log) fprintf(g_log, "pivotkit: mainForm=%p\n", g_mainForm);
+    if (g_log) fflush(g_log);
+
+    g_L = luaL_newstate();
+    if (!g_L) return 0;
+    luaL_openlibs(g_L);
+
+    lua_newtable(g_L);
+    lua_pushcfunction(g_L, api_log);           lua_setfield(g_L, -2, "log");
+    lua_pushcfunction(g_L, api_get_main_form); lua_setfield(g_L, -2, "get_main_form");
+    lua_pushcfunction(g_L, api_call);          lua_setfield(g_L, -2, "call");
+    lua_pushcfunction(g_L, api_get_field);     lua_setfield(g_L, -2, "get_field");
+    lua_pushcfunction(g_L, api_set_field);     lua_setfield(g_L, -2, "set_field");
+    lua_pushcfunction(g_L, api_on_update);     lua_setfield(g_L, -2, "on_update");
+    lua_pushcfunction(g_L, api_frame_number);  lua_setfield(g_L, -2, "frame_number");
+    lua_pushcfunction(g_L, api_read_u32);      lua_setfield(g_L, -2, "read_u32");
+    lua_pushcfunction(g_L, api_write_u32);     lua_setfield(g_L, -2, "write_u32");
+    lua_pushcfunction(g_L, api_read_ptr);      lua_setfield(g_L, -2, "read_ptr");
+    lua_pushcfunction(g_L, api_read_string);   lua_setfield(g_L, -2, "read_string");
+    lua_pushcfunction(g_L, api_classname);     lua_setfield(g_L, -2, "classname");
+    lua_pushcfunction(g_L, api_find_instance); lua_setfield(g_L, -2, "find_instance");
+    lua_pushcfunction(g_L, api_field_offset);  lua_setfield(g_L, -2, "field_offset");
+    lua_pushcfunction(g_L, api_method_addr);   lua_setfield(g_L, -2, "method_addr");
+    lua_pushcfunction(g_L, api_class);         lua_setfield(g_L, -2, "class");
+    lua_pushcfunction(g_L, api_key_press);     lua_setfield(g_L, -2, "key_press");
+    lua_pushcfunction(g_L, api_key_down);      lua_setfield(g_L, -2, "key_down");
+    lua_pushcfunction(g_L, api_sleep);         lua_setfield(g_L, -2, "sleep");
+    lua_pushcfunction(g_L, api_hook);          lua_setfield(g_L, -2, "hook");
+    lua_pushcfunction(g_L, api_unhook);        lua_setfield(g_L, -2, "unhook");
+    lua_pushcfunction(g_L, api_add_menu_button); lua_setfield(g_L, -2, "add_menu_button");
+    lua_pushcfunction(g_L, api_remove_menu_button); lua_setfield(g_L, -2, "remove_menu_button");
+    lua_pushcfunction(g_L, api_sprite);         lua_setfield(g_L, -2, "sprite");
+    lua_pushcfunction(g_L, sprite_destroy_handle); lua_setfield(g_L, -2, "sprite_destroy");
+    lua_pushcfunction(g_L, api_sprite_move);    lua_setfield(g_L, -2, "sprite_move");
+    lua_pushcfunction(g_L, api_sprite_vel);     lua_setfield(g_L, -2, "sprite_velocity");
+    lua_pushcfunction(g_L, api_sprite_bounce);  lua_setfield(g_L, -2, "sprite_bounce");
+    lua_pushcfunction(g_L, api_sprite_show);    lua_setfield(g_L, -2, "sprite_show");
+    lua_pushcfunction(g_L, api_sprite_hide);    lua_setfield(g_L, -2, "sprite_hide");
+    lua_pushcfunction(g_L, api_sprite_pos);     lua_setfield(g_L, -2, "sprite_pos");
+    lua_pushcfunction(g_L, api_window_rect);    lua_setfield(g_L, -2, "window_rect");
+    lua_setglobal(g_L, "pivot");
+    lua_pushnil(g_L);
+    lua_setglobal(g_L, "__pivot_update__");
+
+    GetModuleFileNameA(g_appBase, g_modDir, MAX_PATH);
+    {
+        char* slash = strrchr(g_modDir, '\\');
+        if (slash) *slash = '\0';
+    }
+    strncat(g_modDir, "\\pivotkit\\mods", sizeof(g_modDir) - strlen(g_modDir) - 1);
+
+    if (hook_peek_message()) {
+        g_loadFrameDelay = 120;              /* ~2 seconds at 60fps */
+        InterlockedExchange(&g_pendingLoad, 1);
+    } else {
+        load_mods(g_modDir);
+    }
+
+    if (g_log) {
+        fprintf(g_log, "pivotkit: setup done. hook=%d\n", g_origPeekMessageW != NULL);
+        fflush(g_log);
+    }
+    return 0;
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved)
+{
+    (void)reserved;
+    if (reason == DLL_PROCESS_ATTACH) {
+        g_appBase = (HMODULE)GetModuleHandleW(NULL);   /* pivot.exe base, not our DLL */
+        char logPath[MAX_PATH];
+        GetModuleFileNameA(hModule, logPath, MAX_PATH);
+        {
+            char* slash = strrchr(logPath, '\\');
+            if (slash) *slash = '\0';
+        }
+        strncat(logPath, "\\\pivotkit.log", sizeof(logPath) - strlen(logPath) - 1);
+        g_log = fopen(logPath, "a");
+        if (g_log) {
+            fprintf(g_log, "\n=== pivotkit loaded ===\n");
+            fflush(g_log);
+        }
+        DisableThreadLibraryCalls(hModule);
+        CreateThread(NULL, 0, loader_thread, NULL, 0, NULL);
+    }
+    else if (reason == DLL_PROCESS_DETACH) {
+        if (g_L) lua_close(g_L);
+        if (g_log) fclose(g_log);
+    }
+    return TRUE;
+}

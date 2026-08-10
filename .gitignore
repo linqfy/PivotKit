@@ -1,0 +1,19 @@
+# Build output
+bin/
+*.obj
+*.lib
+*.exp
+*.pdb
+
+# Runtime logs
+*.log
+
+# Local copies of deployed artifacts
+pivotkit.dll
+pivotkit-loader.exe
+
+# Editor / OS cruft
+.vs/
+*.user
+Thumbs.db
+.DS_Store
