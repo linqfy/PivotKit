@@ -78,3 +78,56 @@ jobs:
             bin/pivotkit-loader.exe
             mods/*.lua
           if-no-files-found: error
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pivotkit-${{ github.sha }}
+          path: release
+
+      - name: Assemble release payload
+        shell: bash
+        run: |
+          mkdir -p release_payload/pivotkit/mods
+          cp release/pivotkit.dll release_payload/pivotkit.dll
+          cp release/pivotkit-loader.exe release_payload/pivotkit-loader.exe
+          cp release/*.lua release_payload/pivotkit/mods/
+          cp README.md release_payload/README.md
+          cp -r docs release_payload/docs
+          cd release_payload && zip -r ../pivotkit-${GITHUB_REF_NAME}.zip .
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "pivotkit ${{ github.ref_name }} — HEAVY BETA"
+          body: |
+            ## ⚠️ HEAVY BETA
+
+            This project is in **heavy beta**. It is a code-injection mod loader for
+            Pivot Animator 5.2.11 (32-bit). Things may break, crash pivot.exe, or
+            corrupt your `.piv` files — use at your own risk on a backup of your work.
+
+            - Targets: **32-bit pivot.exe v5.2.11 only**
+            - Requires: Visual Studio 2022 to build from source (prebuilt binaries included)
+            - Not affiliated with Motusoft / Peter Bone / Pivot Animator.
+
+            **Install:** copy `pivotkit.dll` + `pivotkit-loader.exe` next to
+            `pivot.exe`, put mods in `pivotkit/mods/`, run `pivotkit-loader.exe`.
+            See `docs/GETTING_STARTED.md`.
+
+            **Changes in this release:**
+            - See the CHANGELOG / git log.
+          files: |
+            release_payload/pivotkit-*.zip
+          prerelease: true
+          draft: false
