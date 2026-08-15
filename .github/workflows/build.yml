@@ -98,9 +98,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p release_payload/pivotkit/mods
-          cp release/pivotkit.dll release_payload/pivotkit.dll
-          cp release/pivotkit-loader.exe release_payload/pivotkit-loader.exe
-          cp release/*.lua release_payload/pivotkit/mods/
+          cp release/bin/pivotkit.dll release_payload/pivotkit.dll
+          cp release/bin/pivotkit-loader.exe release_payload/pivotkit-loader.exe
+          cp release/mods/*.lua release_payload/pivotkit/mods/
           cp README.md release_payload/README.md
           cp -r docs release_payload/docs
           cd release_payload && zip -r ../pivotkit-${GITHUB_REF_NAME}.zip .
