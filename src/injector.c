@@ -69,6 +69,14 @@ int main(int argc, char** argv)
         snprintf(pivotPath, MAX_PATH, "%s", argv[1]);
     }
 
+    /* `-console` shows the pivotkit console window (BepInEx-style). */
+    for (int i = 1; i < argc; i++) {
+        if (_stricmp(argv[i], "-console") == 0) {
+            SetEnvironmentVariableA("PIVOTKIT_CONSOLE", "1");
+            break;
+        }
+    }
+
     if (GetFileAttributesA(pivotPath) == INVALID_FILE_ATTRIBUTES)
         die("pivot.exe not found next to loader");
 

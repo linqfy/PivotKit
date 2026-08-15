@@ -222,6 +222,69 @@ mock.update(11)
 check(hudCalls == 1, "hud() runs its draw fn each frame")
 check(mock.overlay.begins >= 2, "hud() calls overlay_begin each frame")
 
+-- ------------------------------------------------------------ console / bridge
+pivotlib.register_command("hello2", function() return "world2" end)
+check(pivotlib.console_exec("hello2") == "world2", "console_exec runs registered command")
+check(pivotlib.console_exec("1 + 2") == "3", "console_exec evaluates Lua (1+2 -> 3)")
+check(pivotlib.console_exec("return 42") == "42", "console_exec handles explicit return")
+check(pivotlib.console_exec("nil + 1"):match("error"), "console_exec reports Lua errors")
+check(_G.__pivot_console__("2 * 3") == "6", "__pivot_console__ global wired")
+check(pivotlib.console(true) == true, "console(true) shows console")
+
+-- ------------------------------------------------------------ input events
+local mouseBtns, mouseXs, mouseYs = {}, {}, {}
+pivotlib.on_mouse_down(function(btn, x, y, shift)
+    mouseBtns[#mouseBtns + 1] = btn; mouseXs[#mouseXs + 1] = x; mouseYs[#mouseYs + 1] = y
+end)
+mock.cursor.x, mock.cursor.y = 340, 120
+mock.keys[0x01] = true        -- left button down
+mock.update(30)
+check(mouseBtns[1] == 1, "on_mouse_down receives button (got " .. tostring(mouseBtns[1]) .. ")")
+check(mouseXs[1] == 340, "on_mouse_down gets window-relative X (got " .. tostring(mouseXs[1]) .. ")")
+check(mouseYs[1] == 120, "on_mouse_down gets window-relative Y (got " .. tostring(mouseYs[1]) .. ")")
+mock.keys[0x01] = false
+mock.update(31)
+
+local moved = 0
+pivotlib.on_mouse_move(function(x, y) moved = moved + 1 end)
+mock.cursor.x, mock.cursor.y = 400, 200
+mock.update(32)
+check(moved >= 1, "on_mouse_move fires on cursor change (got " .. moved .. ")")
+
+local keys = {}
+pivotlib.on_key_down(function(key, char) keys[#keys + 1] = key .. ":" .. char end)
+mock.keys[0x50] = true
+mock.update(33)
+check(keys[1] == "80:P", "on_key_down receives key + char (got " .. tostring(keys[1]) .. ")")
+mock.keys[0x50] = false
+mock.update(34)
+
+-- ------------------------------------------------------------ batch + undo
+mock.publish(form, { AssignUndo = function(s) mock.objects[form]._undoid = s; return 0 end })
+local batched = false
+pivotlib.batch(function() batched = true end)
+check(batched, "batch() runs fn")
+check(mock.objects[form]._undoid == "pivotlib batch", "batch() commits AssignUndo")
+check(last(form).name == "AssignUndo", "batch() called AssignUndo via call_string")
+
+-- ------------------------------------------------------------ peek / pin / dump
+mock.mem[figA] = { [0] = 7, [4] = 12, [8] = 99 }
+check(pivotlib.peek(figA, 4) == 12, "peek reads value at offset (got " .. tostring(pivotlib.peek(figA, 4)) .. ")")
+check(pivotlib.peek(figA, 0) == 7, "peek default kind u32")
+local rows = pivotlib.dump(figA, 0, 8)
+check(#rows == 3, "dump returns 3 words (got " .. #rows .. ")")
+local pinned = pivotlib.pin("TFigure", { { kind = "u32", value = 12 } })
+local hit = false
+for _, e in ipairs(pinned) do
+    if e.probes[1].offsets[1] == 4 then hit = true end
+end
+check(hit, "pin finds offset 4 for value 12 in TFigure instances")
+
+-- ------------------------------------------------------------ figure builder
+local fbForm = mock.new_object("TFigureBuilderForm", {})
+check(pivotlib.figure_builder() ~= nil, "figure_builder() finds TFigureBuilderForm")
+check(pivotlib.figure_builder().Class == "TFigureBuilderForm", "figure_builder() class")
+
 -- ------------------------------------------------------------ result
 print(string.format("\nRESULT: %d passed, %d failed", pass, fail))
 if fail > 0 then os.exit(1) end

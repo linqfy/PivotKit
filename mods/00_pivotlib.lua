@@ -22,7 +22,7 @@
 
 local pivotlib = {}
 
-pivotlib.VERSION = "0.3.0"
+pivotlib.VERSION = "0.4.0"
 
 -- ---------------------------------------------------------------------------
 -- internal state
@@ -669,6 +669,187 @@ function pivotlib.probe(classname)
         fields[name] = pivotlib.read_field(inst, name)
     end
     return inst, fields
+end
+
+-- ---------------------------------------------------------------------------
+-- console & bridge command dispatch
+-- ---------------------------------------------------------------------------
+
+-- Execute one console/bridge line: registered commands first, then Lua eval.
+function pivotlib.console_exec(line)
+    if type(line) ~= "string" then return nil end
+    line = line:gsub("[\r\n]+$", "")
+    line = line:match("^%s*(.-)%s*$")
+    if line == "" then return nil end
+    local name = line:match("^(%S+)")
+    if name and commands[name] then
+        local ok, r = pcall(commands[name])
+        if not ok then return "error: " .. tostring(r) end
+        return r ~= nil and tostring(r) or nil
+    end
+    local f, err = load("return " .. line)
+    if not f then f, err = load(line) end
+    if not f then return "error: " .. tostring(err) end
+    local ok, r = pcall(f)
+    if not ok then return "error: " .. tostring(r) end
+    return r ~= nil and tostring(r) or nil
+end
+
+_G.__pivot_console__ = function(line) return pivotlib.console_exec(line) end
+
+function pivotlib.console(show)
+    if show ~= nil then return pivot.console(show) end
+    return pivot.console()
+end
+
+-- ---------------------------------------------------------------------------
+-- input events (polling-based — SAFE: no inline hooks on Pivot's FMX handlers)
+--
+-- on_mouse_down/up/move and on_key_down/up are driven from the per-frame tick
+-- by polling GetAsyncKeyState + cursor position, so they can never crash
+-- pivot.exe. (Inline-hooking FMX canvas/key methods was found to cause
+-- intermittent access violations, so the hook-based version was removed.)
+-- ---------------------------------------------------------------------------
+
+local mouse_down, mouse_move, mouse_up = {}, {}, {}
+local key_down_h, key_up_h = {}, {}
+local input_active = false
+local last_mouse = { x = -1, y = -1 }
+local last_buttons = { [1] = false, [2] = false, [4] = false }
+local last_keys = {}
+local BUTTON_VKS = { 0x01, 0x02, 0x04 }   -- left, right, middle
+
+local function dispatch(list, ...)
+    for i = #list, 1, -1 do
+        local ok, err = pcall(list[i], ...)
+        if not ok then
+            pivot.log("pivotlib: input handler error: " .. tostring(err))
+            table.remove(list, i)
+        end
+    end
+end
+
+local function poll_input()
+    if not input_active then return end
+    local cx, cy = pivot.cursor_pos()
+    if not cx then return end
+    local l, t = pivot.window_rect()
+    local wx, wy = cx - l, cy - t
+
+    if wx ~= last_mouse.x or wy ~= last_mouse.y then
+        last_mouse.x, last_mouse.y = wx, wy
+        dispatch(mouse_move, wx, wy)
+    end
+
+    local shift = 0
+    if pivot.key_down(0x10) then shift = shift + 1 end  -- Shift
+    if pivot.key_down(0x11) then shift = shift + 2 end  -- Ctrl
+    if pivot.key_down(0x12) then shift = shift + 4 end  -- Alt
+
+    for _, vk in ipairs(BUTTON_VKS) do
+        local down = pivot.key_down(vk)
+        local prev = last_buttons[vk]
+        if down and not prev then dispatch(mouse_down, vk, wx, wy, shift) end
+        if not down and prev then dispatch(mouse_up, vk, wx, wy, shift) end
+        last_buttons[vk] = down
+    end
+
+    if #key_down_h > 0 or #key_up_h > 0 then
+        for vk = 1, 255 do
+            local down = pivot.key_down(vk)
+            local prev = last_keys[vk]
+            if down and not prev then dispatch(key_down_h, vk, string.char(vk % 256), shift) end
+            if not down and prev then dispatch(key_up_h, vk, string.char(vk % 256), shift) end
+            last_keys[vk] = down
+        end
+    end
+end
+
+local function enable_input()
+    if input_active then return end
+    input_active = true
+    if not rawget(pivotlib, "__input_poller") then
+        rawset(pivotlib, "__input_poller", true)
+        pivotlib.on_update(poll_input)
+    end
+end
+
+function pivotlib.on_mouse_down(fn) assert(type(fn) == "function"); mouse_down[#mouse_down + 1] = fn; enable_input() end
+function pivotlib.on_mouse_up(fn)   assert(type(fn) == "function"); mouse_up[#mouse_up + 1] = fn; enable_input() end
+function pivotlib.on_mouse_move(fn) assert(type(fn) == "function"); mouse_move[#mouse_move + 1] = fn; enable_input() end
+function pivotlib.on_key_down(fn)   assert(type(fn) == "function"); key_down_h[#key_down_h + 1] = fn; enable_input() end
+function pivotlib.on_key_up(fn)     assert(type(fn) == "function"); key_up_h[#key_up_h + 1] = fn; enable_input() end
+
+-- ---------------------------------------------------------------------------
+-- batch + undo
+-- ---------------------------------------------------------------------------
+
+-- Run `fn` and (best-effort) commit it as a single undo action.
+function pivotlib.batch(fn)
+    assert(type(fn) == "function", "pivotlib.batch: fn")
+    local m = main()
+    local ok, err = pcall(fn)
+    if m and ok then
+        pcall(pivot.call_string, ptr_of(m), "AssignUndo", "pivotlib batch")
+    end
+    return ok, err
+end
+
+-- ---------------------------------------------------------------------------
+-- figure builder automation
+-- ---------------------------------------------------------------------------
+
+function pivotlib.open_figure_builder()
+    local m = main(); return m and m:EditTypeButtonClick() or false
+end
+
+function pivotlib.figure_builder()
+    local list = pivotlib.scan("TFigureBuilderForm", 1)
+    return list[1]
+end
+
+-- ---------------------------------------------------------------------------
+-- raw peek / pointer pinning / dump
+-- ---------------------------------------------------------------------------
+
+function pivotlib.peek(obj, offset, kind)
+    local p = ptr_of(obj)
+    if not p then return nil end
+    return pivot.peek(p, offset, kind or "u32")
+end
+
+-- Scan live instances of `classname` for the given {kind, value} probes and
+-- report every offset where a value lives. Use to pin the private offsets of
+-- classes like TFigure (0 published fields).
+function pivotlib.pin(classname, probes, max)
+    assert(type(probes) == "table", "pivotlib.pin: probes table required")
+    local out = {}
+    for _, inst in ipairs(pivotlib.scan(classname, max or 64)) do
+        local entry = { instance = inst, probes = {} }
+        for _, pr in ipairs(probes) do
+            local kind, target = pr.kind or "u32", pr.value
+            local offsets = {}
+            for off = 0, 0x2000, 4 do
+                local v = pivotlib.peek(inst, off, kind)
+                if v ~= nil and v == target then offsets[#offsets + 1] = off end
+            end
+            entry.probes[#entry.probes + 1] = { kind = kind, value = target, offsets = offsets }
+        end
+        out[#out + 1] = entry
+    end
+    return out
+end
+
+-- Dump raw 4-byte words of an object for manual offset exploration.
+function pivotlib.dump(obj, from, to)
+    from = from or 0
+    to = to or 0x200
+    local rows = {}
+    for off = from, to, 4 do
+        local v = pivotlib.peek(obj, off, "u32")
+        if v ~= nil then rows[#rows + 1] = { off = off, v = v } end
+    end
+    return rows
 end
 
 -- ---------------------------------------------------------------------------

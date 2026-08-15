@@ -3,6 +3,40 @@
 All notable changes to this project are documented here.
 This project is in **heavy beta** — expect breaking changes.
 
+## [0.4.0] — console, TCP bridge, input events, scene pinning, batch, figure builder
+
+- **Console (BepInEx-style)**: real Windows console window showing all
+  `pivot.log` output with an interactive prompt. Enable with `pivotkit-loader
+  -console`, via the `PIVOTKIT_CONSOLE` env var, or at runtime with
+  `pivot.console(true)` / `pivotlib.console()`. Commands run on the main
+  thread; bare pivotlib commands work (falls back to Lua eval).
+- **TCP bridge (enabled by default)**: loopback server on `127.0.0.1:50077`.
+  One text command per connection, runs on the main thread, replies with the
+  result. `tools/pivotctl.py` is the Python client.
+- **Input events**: `pivotlib.on_mouse_down/up/move` and `on_key_down/up`.
+  **Polling-based** (per-frame `GetAsyncKeyState` + cursor position) so they
+  can never crash pivot.exe. The initial hook-based implementation
+  (inline-hooking FMX canvas/key methods) caused intermittent "write of access
+  000000" crashes and was replaced.
+- **Crash fixes**:
+  - removed inline hooks on `EditPaintBoxMouseDown/Up/Move` and
+    `FormKeyDown/Up` (the source of the access violations)
+  - `hook_callback` is SEH-protected
+  - bridge requests are leaked instead of freed (removes the use-after-free
+    race with the 8s wait); `find_main_hwnd` caches the window handle
+- **Scene pinning**: `pivot.peek(obj, offset, kind)`, `pivotlib.pin(class, probes)`
+  (offset discovery) and `pivotlib.dump(obj, from, to)` — for pinning the
+  private offsets of `TFigure` etc. (0 published fields).
+- **Batch + undo**: `pivotlib.batch(fn)` commits `fn` as one undo action
+  (best-effort `AssignUndo`).
+- **Figure builder automation**: `pivotlib.open_figure_builder()` +
+  `pivotlib.figure_builder()` (proxies the 88-method/82-field
+  `TFigureBuilderForm`).
+- **New demo mod** `mods/03_pivotlib_events.lua` (canvas click counter +
+  HUD + `clicks` command).
+- Tests: 79 checks; mock now supports invocable hooks, `peek` memory and
+  `console`.
+
 ## [0.3.0] — hooks v2, overlay, mod manager, scene discovery
 
 - **Hooks upgraded** (inline detour): callbacks now receive up to **six**

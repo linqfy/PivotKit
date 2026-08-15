@@ -217,9 +217,38 @@ For reaching **private** fields or arbitrary data.
 | `pivot.write_u32(addr, value)` | write 32-bit value (SEH-guarded) |
 | `pivot.read_ptr(addr)` | read pointer-sized value |
 | `pivot.read_string(addr)` | read a Delphi shortstring (length-prefixed) |
+| `pivot.peek(obj, offset, kind)` | read a typed value at `obj + offset` (`u8/i8/u16/i16/u32/i32/f32/f64/ptr/str`) — for pinning private field offsets |
+
+```lua
+local x = pivot.peek(form, 0x100, "f32")
+```
 
 All reads are exception-guarded: an invalid address returns `nil` instead of
 crashing Pivot.
+
+## Console & TCP bridge
+
+**Console (BepInEx-style):** a real console window that shows every
+`pivot.log` line and accepts typed commands. Enable with `pivotkit-loader
+-console`, or at runtime:
+
+```lua
+pivot.console(true)   -- show / create (returns whether visible)
+pivot.console()       -- query
+pivot.console(false)  -- hide
+```
+
+Commands run on the main thread and go through the same dispatcher as the
+bridge: registered pivotlib commands first, then Lua evaluation.
+
+**Bridge (enabled by default):** a loopback TCP server on `127.0.0.1:50077`.
+Send one command per connection, get the result back — see
+`tools/pivotctl.py`:
+
+```
+python pivotctl.py "pivotlib.frame()"
+python pivotctl.py "hud"
+```
 
 ---
 

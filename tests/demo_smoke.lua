@@ -27,6 +27,7 @@ end
 dofile("mods/00_pivotlib.lua")
 dofile("mods/01_pivotlib_demo.lua")
 dofile("mods/02_pivotlib_hud.lua")
+dofile("mods/03_pivotlib_events.lua")
 
 -- toggle the HUD on via the F1 binding, then step a frame
 mock.keys[0x70] = true      -- F1
@@ -35,7 +36,13 @@ mock.keys[0x70] = false
 mock.update(2)
 print("HUD toggle draws overlay prims: " .. tostring(#mock.overlay.items > 0))
 
-for i = 3, 65 do mock.update(i) end
+-- fire a canvas mouse-down; the events demo increments its click counter
+local xbits = select(1, string.unpack("<i4", string.pack("<f", 40.0)))
+local ybits = select(1, string.unpack("<i4", string.pack("<f", 25.0)))
+mock.fire(form, "EditPaintBoxMouseDown", 0, 0, 0, xbits, ybits)
+mock.update(3)
+
+for i = 4, 65 do mock.update(i) end
 
 print("--- pivotkit.log ---")
 for _, line in ipairs(mock.logs) do print(line) end

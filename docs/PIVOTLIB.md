@@ -86,6 +86,61 @@ Special proxy members:
 `load_project(path)` (best-effort, string-aware), `export_svg(path)`,
 `export_svg_nohandles(path)` (best-effort SVG export without dialogs)
 
+### Input events
+| Function | Description |
+|----------|-------------|
+| `on_mouse_down(fn)` / `on_mouse_up(fn)` | `fn(button, x, y, shift)` on mouse button edges (button: 1=left, 2=right, 4=middle) |
+| `on_mouse_move(fn)` | `fn(x, y, shift)` on cursor movement |
+| `on_key_down(fn)` / `on_key_up(fn)` | `fn(key, char, shift)` on key press/release |
+
+Coordinates are window-relative. Input events are **polling-based**
+(`GetAsyncKeyState` + cursor position in the per-frame tick) — they never
+inline-hook Pivot's FMX canvas/key handlers, so they cannot crash pivot.exe.
+
+```lua
+pivotlib.on_mouse_down(function(button, x, y)
+    pivotlib.log(string.format("click %d at (%.0f,%.0f)", button, x, y))
+end)
+```
+
+> Inline-hooking FMX canvas/key event methods (`EditPaintBoxMouseDown`, ...)
+> caused intermittent access violations and is discouraged; prefer the polling
+> events above.
+
+### Console & bridge
+| Function | Description |
+|----------|-------------|
+| `console([show])` | show/hide/query the BepInEx-style console window |
+| `console_exec(line)` | run a console/bridge line (command or Lua); returns the result string |
+
+The console (launch with `pivotkit-loader -console`) and the TCP bridge
+(`tools/pivotctl.py`) both route through `console_exec`.
+
+### Batch + undo
+`batch(fn)` runs `fn` and (best-effort) commits it as a single undo action.
+
+### Figure builder automation
+`open_figure_builder()` opens the figure builder; `figure_builder()` returns a
+proxy for the live `TFigureBuilderForm` (88 published methods + 82 fields,
+fully scriptable through the proxy).
+
+### Scene pinning (private offsets)
+| Function | Description |
+|----------|-------------|
+| `peek(obj, offset, kind)` | read a typed value at `obj + offset` (`u32`, `i32`, `f32`, `f64`, `u8`, `ptr`, `str`, ...) |
+| `pin(class, probes)` | scan live instances for offsets where a `{kind, value}` lives |
+| `dump(obj, from, to)` | raw 4-byte words of an object for manual exploration |
+
+```lua
+-- find where the value 12 lives in every live TFigure
+for _, e in ipairs(pivotlib.pin("TFigure", { { kind = "u32", value = 12 } })) do
+    pivotlib.log("offset: " .. tostring(e.probes[1].offsets[1]))
+end
+```
+
+> `TFigure` exposes no published fields, so `pos()/angle()` need offsets pinned
+> with these tools first.
+
 ### Events
 | Function | Description |
 |----------|-------------|

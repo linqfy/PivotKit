@@ -11,10 +11,12 @@
 
 #define _WIN32_WINNT 0x0601
 #define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#pragma comment(lib, "ws2_32.lib")
 
 extern "C" {
 #include "lua.h"
@@ -42,6 +44,22 @@ static void*      g_mainForm = NULL;
 static lua_State* g_L        = NULL;
 static volatile LONG g_frame = 0;
 static FILE*      g_log      = NULL;
+
+static void console_process_cmds(void);
+static void bridge_process(void);
+static void console_write(const char* s);
+
+/* Log unhandled exceptions (access violations) so crashes are diagnosable. */
+static LONG WINAPI crash_filter(struct _EXCEPTION_POINTERS* ep)
+{
+    if (g_log) {
+        fprintf(g_log, "\n=== CRASH 0x%08X at 0x%p ===\n",
+                ep->ExceptionRecord->ExceptionCode,
+                ep->ExceptionRecord->ExceptionAddress);
+        fflush(g_log);
+    }
+    return EXCEPTION_EXECUTE_HANDLER;
+}
 
 static DWORD_PTR rebase(DWORD_PTR anchor) { return (DWORD_PTR)g_appBase + (anchor - IMAGEBASE); }
 static uint16_t  ru16(DWORD_PTR va) { return *(uint16_t*)va; }
@@ -500,33 +518,38 @@ static int hook_callback(int idx)
 {
     HookRec* h = &g_hooks[idx];
     if (!g_L || h->luaRef == LUA_NOREF) return 0;
-    lua_rawgeti(g_L, LUA_REGISTRYINDEX, h->luaRef);
-    if (!lua_isfunction(g_L, -1)) { lua_pop(g_L, 1); return 0; }
-    lua_pushlightuserdata(g_L, (void*)g_saveSelf);
-    push_hook_arg(g_L, (void*)g_saveA1);
-    push_hook_arg(g_L, (void*)g_saveA2);
-    push_hook_arg(g_L, (void*)g_saveS1);
-    push_hook_arg(g_L, (void*)g_saveS2);
-    push_hook_arg(g_L, (void*)g_saveS3);
-    push_hook_arg(g_L, (void*)g_saveS4);
-    if (lua_pcall(g_L, 7, 1, 0) != LUA_OK) {
-        if (g_log) { fprintf(g_log, "hook err: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+    __try {
+        lua_rawgeti(g_L, LUA_REGISTRYINDEX, h->luaRef);
+        if (!lua_isfunction(g_L, -1)) { lua_pop(g_L, 1); return 0; }
+        lua_pushlightuserdata(g_L, (void*)g_saveSelf);
+        push_hook_arg(g_L, (void*)g_saveA1);
+        push_hook_arg(g_L, (void*)g_saveA2);
+        push_hook_arg(g_L, (void*)g_saveS1);
+        push_hook_arg(g_L, (void*)g_saveS2);
+        push_hook_arg(g_L, (void*)g_saveS3);
+        push_hook_arg(g_L, (void*)g_saveS4);
+        if (lua_pcall(g_L, 7, 1, 0) != LUA_OK) {
+            if (g_log) { fprintf(g_log, "hook err: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+            lua_pop(g_L, 1);
+            return 0;
+        }
+        int overrode = !lua_isnil(g_L, -1);
+        if (overrode) {
+            if (lua_isstring(g_L, -1)) {
+                /* Override with a string: build a constant Delphi string (never
+                 * freed by the app) and hand its pointer back in EAX. */
+                void* s = make_delphi_string(lua_tostring(g_L, -1));
+                g_hookResult = (DWORD_PTR)s;
+            } else {
+                g_hookResult = (DWORD_PTR)lua_tointeger(g_L, -1);
+            }
+        }
         lua_pop(g_L, 1);
+        return overrode;
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        if (g_log) { fprintf(g_log, "hook callback caught AV\n"); fflush(g_log); }
         return 0;
     }
-    int overrode = !lua_isnil(g_L, -1);
-    if (overrode) {
-        if (lua_isstring(g_L, -1)) {
-            /* Override with a string: build a constant Delphi string (never
-             * freed by the app) and hand its pointer back in EAX. */
-            void* s = make_delphi_string(lua_tostring(g_L, -1));
-            g_hookResult = (DWORD_PTR)s;
-        } else {
-            g_hookResult = (DWORD_PTR)lua_tointeger(g_L, -1);
-        }
-    }
-    lua_pop(g_L, 1);
-    return overrode;
 }
 
 static int install_hook(void* obj, const char* methodName, int luaRef)
@@ -689,9 +712,18 @@ static BOOL CALLBACK main_win_enum(HWND h, LPARAM l)
 
 static HWND find_main_hwnd(void)
 {
+    /* Cache to keep EnumWindows off the hot path (input polling calls
+     * window_rect every frame). Re-enumerate every 2s or on invalid hwnd. */
+    static HWND cached = NULL;
+    static DWORD lastCheck = 0;
+    DWORD now = GetTickCount();
+    if (cached && IsWindow(cached) && (now - lastCheck) < 2000)
+        return cached;
     MainWinSearch st = { 0, NULL };
     EnumWindows(main_win_enum, (LPARAM)&st);
-    return st.hwnd;
+    lastCheck = now;
+    if (st.hwnd) cached = st.hwnd;
+    return st.hwnd ? st.hwnd : cached;
 }
 
 static void resolve_path(char* out, size_t outsz, const char* rel)
@@ -1185,6 +1217,16 @@ static int api_window_rect(lua_State* L)
     return 4;
 }
 
+/* Cursor position in screen coords: x, y. */
+static int api_cursor_pos(lua_State* L)
+{
+    POINT p;
+    if (!GetCursorPos(&p)) { lua_pushinteger(L, 0); lua_pushinteger(L, 0); return 2; }
+    lua_pushinteger(L, p.x);
+    lua_pushinteger(L, p.y);
+    return 2;
+}
+
 /* Stepped each frame: move sprites with velocity and bounce them. */
 static void sprites_tick(void)
 {
@@ -1265,6 +1307,10 @@ static BOOL WINAPI HookedPeekMessageW(LPMSG lpMsg, HWND hWnd, UINT wMin,
     /* Step sprites (bouncing demo) and keep the button anchored. */
     sprites_tick();
 
+    /* Run console + bridge commands on the main thread (Delphi-safe). */
+    console_process_cmds();
+    bridge_process();
+
     return r;
 }
 
@@ -1314,17 +1360,308 @@ static int hook_peek_message(void)
 }
 
 /* --------------------------------------------------------------------------
+ * Console (BepInEx-style) + TCP bridge
+ *
+ * Console: a real Windows console window ("pivotkit console") that receives
+ * all pivot.log output and lets you type Lua / pivotlib commands. Enabled by
+ * the -console loader flag (PIVOTKIT_CONSOLE env) or at runtime via
+ * pivot.console(true). Commands run on the main thread (Delphi-safe).
+ *
+ * Bridge: a loopback TCP server on 127.0.0.1:50077 (enabled by default) that
+ * accepts one text command per connection, runs it on the main thread, and
+ * replies with the result — this is what tools/pivotctl.py talks to.
+ * ------------------------------------------------------------------------ */
+
+#define MAX_CMD_LINE 512
+#define MAX_CMD_QUEUE 256
+
+static HANDLE g_consoleOut = NULL;
+static HANDLE g_consoleIn  = NULL;
+static int    g_consoleCreated = 0;
+static volatile LONG g_cmdHead = 0, g_cmdTail = 0;
+static char g_cmdQueue[MAX_CMD_QUEUE][MAX_CMD_LINE];
+
+static void queue_cmd(const char* cmd);
+static DWORD WINAPI console_input_thread(LPVOID param);
+static void run_lua_command(const char* cmd, char* out, size_t outsz);
+
+static void queue_cmd(const char* cmd)
+{
+    LONG tail = g_cmdTail;
+    LONG next = (tail + 1) % MAX_CMD_QUEUE;
+    if (next == g_cmdHead) return;                 /* full */
+    strncpy(g_cmdQueue[tail], cmd, MAX_CMD_LINE - 1);
+    g_cmdQueue[tail][MAX_CMD_LINE - 1] = 0;
+    g_cmdTail = next;
+}
+
+static void console_write(const char* s)
+{
+    if (!g_consoleOut || !s || !*s) return;
+    DWORD n = 0;
+    WriteConsoleA(g_consoleOut, s, (DWORD)strlen(s), &n, NULL);
+}
+
+static int console_create(void)
+{
+    if (g_consoleCreated) return 1;
+    if (!AllocConsole()) return 0;
+    g_consoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    g_consoleIn  = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleTitleW(L"pivotkit console — Pivot Animator 5.2.11");
+    SetConsoleTextAttribute(g_consoleOut, 0x0F);
+    g_consoleCreated = 1;
+    console_write("pivotkit console ready. Type Lua/pivotlib commands.\n");
+    CreateThread(NULL, 0, console_input_thread, NULL, 0, NULL);
+    return 1;
+}
+
+static DWORD WINAPI console_input_thread(LPVOID param)
+{
+    (void)param;
+    char line[MAX_CMD_LINE];
+    for (;;) {
+        DWORD n = 0;
+        if (!g_consoleIn || !ReadConsoleA(g_consoleIn, line, MAX_CMD_LINE - 1, &n, NULL))
+            break;
+        line[n] = 0;
+        for (int i = (int)n - 1; i >= 0 && (line[i] == '\n' || line[i] == '\r'); i--)
+            line[i] = 0;
+        if (line[0]) {
+            console_write("> ");
+            console_write(line);
+            console_write("\n");
+            queue_cmd(line);
+        }
+    }
+    return 0;
+}
+
+/* Execute one command string. Prefers the Lua-side __pivot_console__ handler
+ * (installed by pivotlib) so bare command names work; falls back to a raw
+ * dofile-style eval. Writes any result/error into `out`. */
+static void run_lua_command(const char* cmd, char* out, size_t outsz)
+{
+    out[0] = 0;
+    if (!g_L) { _snprintf(out, outsz, "error: lua not ready"); return; }
+    lua_getglobal(g_L, "__pivot_console__");
+    if (lua_isfunction(g_L, -1)) {
+        lua_pushstring(g_L, cmd);
+        if (lua_pcall(g_L, 1, 1, 0) != LUA_OK) {
+            _snprintf(out, outsz, "error: %s", lua_tostring(g_L, -1));
+            lua_pop(g_L, 1);
+            return;
+        }
+        if (!lua_isnil(g_L, -1))
+            _snprintf(out, outsz, "%s", lua_tostring(g_L, -1));
+        lua_pop(g_L, 1);
+    } else {
+        lua_pop(g_L, 1);
+        if (luaL_dostring(g_L, cmd) != LUA_OK) {
+            _snprintf(out, outsz, "error: %s", lua_tostring(g_L, -1));
+            lua_pop(g_L, 1);
+        }
+    }
+}
+
+/* Drain queued console commands on the main thread (called each tick). */
+static void console_process_cmds(void)
+{
+    while (g_cmdHead != g_cmdTail) {
+        char cmd[MAX_CMD_LINE];
+        strcpy(cmd, g_cmdQueue[g_cmdHead]);
+        g_cmdHead = (g_cmdHead + 1) % MAX_CMD_QUEUE;
+        char out[1024];
+        run_lua_command(cmd, out, sizeof(out));
+        if (out[0]) { console_write(out); console_write("\n"); }
+    }
+}
+
+static int api_console(lua_State* L)
+{
+    if (lua_isboolean(L, 1)) {
+        if (lua_toboolean(L, 1)) {
+            if (!g_consoleCreated && !console_create())
+                return luaL_error(L, "pivot.console: AllocConsole failed");
+            if (GetConsoleWindow()) ShowWindow(GetConsoleWindow(), SW_SHOW);
+        } else {
+            if (g_consoleCreated && GetConsoleWindow())
+                ShowWindow(GetConsoleWindow(), SW_HIDE);
+        }
+    } else if (!lua_isnoneornil(L, 1)) {
+        return luaL_error(L, "pivot.console: expected true/false/nil");
+    }
+    lua_pushboolean(L, g_consoleCreated && GetConsoleWindow() &&
+                        IsWindowVisible(GetConsoleWindow()));
+    return 1;
+}
+
+/* --------------------------------------------------------------------------
+ * TCP bridge
+ * ------------------------------------------------------------------------ */
+
+#define BRIDGE_PORT 50077
+#define MAX_BRIDGE_REQS 64
+
+typedef struct {
+    char  cmd[MAX_CMD_LINE];
+    char  result[1024];
+    HANDLE done;
+} BridgeReq;
+
+static SOCKET g_listenSock = INVALID_SOCKET;
+static BridgeReq* g_bridgeReqs[MAX_BRIDGE_REQS];
+static volatile LONG g_bridgeHead = 0, g_bridgeTail = 0;
+
+static void bridge_enqueue(BridgeReq* r)
+{
+    LONG tail = g_bridgeTail;
+    LONG next = (tail + 1) % MAX_BRIDGE_REQS;
+    if (next == g_bridgeHead) return;
+    g_bridgeReqs[tail] = r;
+    g_bridgeTail = next;
+}
+
+static DWORD WINAPI bridge_conn_thread(LPVOID sockp)
+{
+    SOCKET s = (SOCKET)(DWORD_PTR)sockp;
+    char line[MAX_CMD_LINE];
+    int n = recv(s, line, MAX_CMD_LINE - 1, 0);
+    if (n > 0) {
+        line[n] = 0;
+        for (int i = n - 1; i >= 0 && (line[i] == '\n' || line[i] == '\r'); i--)
+            line[i] = 0;
+        BridgeReq* r = (BridgeReq*)malloc(sizeof(BridgeReq));
+        if (r) {
+            strncpy(r->cmd, line, MAX_CMD_LINE - 1);
+            r->cmd[MAX_CMD_LINE - 1] = 0;
+            r->result[0] = 0;
+            r->done = CreateEventW(NULL, TRUE, FALSE, NULL);
+            bridge_enqueue(r);
+            if (WaitForSingleObject(r->done, 8000) == WAIT_OBJECT_0) {
+                send(s, r->result, (int)strlen(r->result), 0);
+            }
+            /* Deliberately leak r (never free / never close the event): the main
+             * thread may still be processing it. A couple hundred bytes per
+             * command is nothing for a dev tool, and it removes the
+             * use-after-free race that was crashing pivot.exe. */
+        }
+    }
+    closesocket(s);
+    return 0;
+}
+
+static DWORD WINAPI bridge_accept_thread(LPVOID param)
+{
+    (void)param;
+    for (;;) {
+        SOCKET c = accept(g_listenSock, NULL, NULL);
+        if (c == INVALID_SOCKET) break;
+        HANDLE h = CreateThread(NULL, 0, bridge_conn_thread,
+                                (void*)(DWORD_PTR)c, 0, NULL);
+        if (h) CloseHandle(h); else closesocket(c);
+    }
+    return 0;
+}
+
+static int bridge_start(void)
+{
+    if (g_listenSock != INVALID_SOCKET) return 1;
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return 0;
+    g_listenSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (g_listenSock == INVALID_SOCKET) return 0;
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((u_short)BRIDGE_PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);      /* loopback only */
+    if (bind(g_listenSock, (struct sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) {
+        closesocket(g_listenSock); g_listenSock = INVALID_SOCKET;
+        return 0;
+    }
+    listen(g_listenSock, 4);
+    CreateThread(NULL, 0, bridge_accept_thread, NULL, 0, NULL);
+    return 1;
+}
+
+/* Drain queued bridge commands on the main thread (called each tick). */
+static void bridge_process(void)
+{
+    while (g_bridgeHead != g_bridgeTail) {
+        BridgeReq* r = g_bridgeReqs[g_bridgeHead];
+        g_bridgeHead = (g_bridgeHead + 1) % MAX_BRIDGE_REQS;
+        if (r) {
+            run_lua_command(r->cmd, r->result, sizeof(r->result));
+            SetEvent(r->done);
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------
+ * Raw peek: read a typed value at (obj + offset) — for pinning private field
+ * offsets of classes like TFigure that expose no published members.
+ * ------------------------------------------------------------------------ */
+
+static int api_peek(lua_State* L)
+{
+    DWORD_PTR addr = 0;
+    if (lua_isuserdata(L, 1)) addr = (DWORD_PTR)lua_touserdata(L, 1);
+    else if (lua_isnumber(L, 1)) addr = (DWORD_PTR)lua_tointeger(L, 1);
+    else return luaL_error(L, "pivot.peek: bad object");
+    int off = (int)luaL_checkinteger(L, 2);
+    const char* kind = lua_isnoneornil(L, 3) ? "u32" : luaL_checkstring(L, 3);
+    void* p = (void*)(addr + off);
+    int isFloat = 0;
+    uint64_t v = 0;
+    __try {
+        if      (strcmp(kind, "u8")  == 0) v = *(uint8_t*)p;
+        else if (strcmp(kind, "i8")  == 0) v = (int8_t)*(int8_t*)p;
+        else if (strcmp(kind, "u16") == 0) v = *(uint16_t*)p;
+        else if (strcmp(kind, "i16") == 0) v = (int16_t)*(int16_t*)p;
+        else if (strcmp(kind, "u32") == 0) v = *(uint32_t*)p;
+        else if (strcmp(kind, "i32") == 0) v = (int32_t)*(int32_t*)p;
+        else if (strcmp(kind, "ptr") == 0) v = *(DWORD_PTR*)p;
+        else if (strcmp(kind, "f32") == 0) { uint32_t u; float f = *(float*)p; memcpy(&u, &f, 4); v = u; isFloat = 1; }
+        else if (strcmp(kind, "f64") == 0) { uint64_t u; double d = *(double*)p; memcpy(&u, &d, 8); v = u; isFloat = 1; }
+        else if (strcmp(kind, "str") == 0) {
+            void* s = *(void**)p;
+            char buf[1024];
+            read_delphi_string(s, buf, sizeof(buf));
+            lua_pushstring(L, buf);
+            return 1;
+        } else {
+            return luaL_error(L, "pivot.peek: unknown kind '%s'", kind);
+        }
+    } __except(EXCEPTION_EXECUTE_HANDLER) { lua_pushnil(L); return 1; }
+    if (isFloat) {
+        if (strcmp(kind, "f32") == 0) { float f; uint32_t u = (uint32_t)v; memcpy(&f, &u, 4); lua_pushnumber(L, f); }
+        else { double d; memcpy(&d, &v, 8); lua_pushnumber(L, d); }
+    } else {
+        lua_pushinteger(L, (lua_Integer)(int64_t)v);
+    }
+    return 1;
+}
+
+/* --------------------------------------------------------------------------
  * Lua API
  * ------------------------------------------------------------------------ */
 
 static int api_log(lua_State* L)
 {
+    char line[1024];
+    size_t pos = 0;
     int n = lua_gettop(L);
     for (int i = 1; i <= n; i++) {
         size_t len; const char* s = lua_tolstring(L, i, &len);
         if (g_log) { fwrite(s, 1, len, g_log); if (i < n) fputc('\t', g_log); fflush(g_log); }
+        for (size_t k = 0; k < len && pos < sizeof(line) - 2; k++) line[pos++] = s[k];
+        if (i < n) line[pos++] = '\t';
     }
     if (g_log) fputc('\n', g_log);
+    line[pos++] = '\n';
+    line[pos] = 0;
+    if (pos > 1) console_write(line);
     return 0;
 }
 
@@ -2075,6 +2412,7 @@ static DWORD WINAPI loader_thread(LPVOID param)
     lua_pushcfunction(g_L, api_sprite_hide);    lua_setfield(g_L, -2, "sprite_hide");
     lua_pushcfunction(g_L, api_sprite_pos);     lua_setfield(g_L, -2, "sprite_pos");
     lua_pushcfunction(g_L, api_window_rect);    lua_setfield(g_L, -2, "window_rect");
+    lua_pushcfunction(g_L, api_cursor_pos);     lua_setfield(g_L, -2, "cursor_pos");
     lua_pushcfunction(g_L, api_overlay_create); lua_setfield(g_L, -2, "overlay_create");
     lua_pushcfunction(g_L, api_overlay_destroy); lua_setfield(g_L, -2, "overlay_destroy");
     lua_pushcfunction(g_L, api_overlay_begin);  lua_setfield(g_L, -2, "overlay_begin");
@@ -2083,6 +2421,8 @@ static DWORD WINAPI loader_thread(LPVOID param)
     lua_pushcfunction(g_L, api_overlay_rect);   lua_setfield(g_L, -2, "overlay_rect");
     lua_pushcfunction(g_L, api_overlay_circle); lua_setfield(g_L, -2, "overlay_circle");
     lua_pushcfunction(g_L, api_overlay_commit); lua_setfield(g_L, -2, "overlay_commit");
+    lua_pushcfunction(g_L, api_console);       lua_setfield(g_L, -2, "console");
+    lua_pushcfunction(g_L, api_peek);          lua_setfield(g_L, -2, "peek");
     lua_setglobal(g_L, "pivot");
     lua_pushnil(g_L);
     lua_setglobal(g_L, "__pivot_update__");
@@ -2099,6 +2439,19 @@ static DWORD WINAPI loader_thread(LPVOID param)
         InterlockedExchange(&g_pendingLoad, 1);
     } else {
         load_mods(g_modDir);
+    }
+
+    /* Console on the -console loader flag (PIVOTKIT_CONSOLE=1). */
+    {
+        char env[16];
+        if (GetEnvironmentVariableA("PIVOTKIT_CONSOLE", env, sizeof(env)) > 0)
+            console_create();
+    }
+
+    /* TCP bridge — enabled by default on 127.0.0.1. */
+    if (bridge_start()) {
+        if (g_log) { fprintf(g_log, "pivotkit: bridge listening on 127.0.0.1:%d\n", BRIDGE_PORT); fflush(g_log); }
+        if (g_consoleOut) console_write("pivotkit bridge: 127.0.0.1:50077 (tools/pivotctl.py)\n");
     }
 
     if (g_log) {
@@ -2126,6 +2479,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved)
             fflush(g_log);
         }
         DisableThreadLibraryCalls(hModule);
+        SetUnhandledExceptionFilter(crash_filter);
         CreateThread(NULL, 0, loader_thread, NULL, 0, NULL);
     }
     else if (reason == DLL_PROCESS_DETACH) {

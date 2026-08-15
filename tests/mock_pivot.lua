@@ -19,11 +19,16 @@ M.main_form = nil
 M.logs = {}
 M.update = nil
 M.keys = {}          -- vk -> bool (for key_down)
+M.cursor = { x = 0, y = 0 }
 M.overlay = { begins = 0, items = {} }
 M.reload_calls = {}
 M.reload_all_calls = 0
 M.hooks = {}         -- record of pivotlib.hook/unhook activity
+M.hooks_by_method = {} -- [obj][method] -> fn (for fire)
 M.unhook_calls = {}
+M.mem = {}           -- [addr][off] -> value (for pivot.peek)
+M.console_calls = {}
+M.console_visible = false
 
 function M.new_object(classname, fields)
     M.next_addr = M.next_addr + 0x100
@@ -219,11 +224,22 @@ function M.window_rect() return 0, 0, 800, 600 end
 function M.key_press() end
 function M.key_down(vk) return M.keys[vk] == true end
 function M.sleep() end
+function M.cursor_pos() return M.cursor.x, M.cursor.y end
 
 function M.hook(obj, method, fn)
     M.hooks[#M.hooks + 1] = { op = "hook", method = method }
+    M.hooks_by_method[obj] = M.hooks_by_method[obj] or {}
+    M.hooks_by_method[obj][method] = fn
     return true
 end
+
+-- Fire a previously-registered hook as the C stub would: fn(self, args...).
+function M.fire(obj, method, ...)
+    local h = M.hooks_by_method[obj] and M.hooks_by_method[obj][method]
+    if not h then error("mock fire: no hook for " .. tostring(method)) end
+    return h(obj, ...)
+end
+
 function M.unhook(obj, method)
     M.hooks[#M.hooks + 1] = { op = "unhook", method = method }
     M.unhook_calls[method] = (M.unhook_calls[method] or 0) + 1
@@ -252,5 +268,16 @@ function M.overlay_line(x1, y1, x2, y2, argb, width) return ov({ t = "line", x1 
 function M.overlay_rect(x1, y1, x2, y2, argb) return ov({ t = "rect", x1 = x1, y1 = y1, x2 = x2, y2 = y2, argb = argb }) end
 function M.overlay_circle(x, y, r, argb) return ov({ t = "circle", x = x, y = y, r = r, argb = argb }) end
 function M.overlay_commit() M.overlay.commits = (M.overlay.commits or 0) + 1; return true end
+
+function M.peek(ptr, off, kind)
+    local t = M.mem[ptr]
+    return t and t[off] or nil
+end
+
+function M.console(show)
+    M.console_calls[#M.console_calls + 1] = show
+    if show ~= nil then M.console_visible = show end
+    return M.console_visible == true
+end
 
 return M
