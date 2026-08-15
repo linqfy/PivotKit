@@ -128,6 +128,6 @@ jobs:
             **Changes in this release:**
             - See the CHANGELOG / git log.
           files: |
-            release_payload/pivotkit-*.zip
+            pivotkit-*.zip
           prerelease: true
           draft: false
