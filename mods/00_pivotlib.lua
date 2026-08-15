@@ -22,7 +22,7 @@
 
 local pivotlib = {}
 
-pivotlib.VERSION = "0.1.0"
+pivotlib.VERSION = "0.3.0"
 
 -- ---------------------------------------------------------------------------
 -- internal state
