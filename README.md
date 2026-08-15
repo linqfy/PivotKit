@@ -24,6 +24,28 @@ Check `pivotkit.log` (created next to `pivot.exe`) to confirm it loaded.
 
 ## What mods can do
 
+The low-level API (`pivot.*`) is covered in [MOD_API.md](docs/MOD_API.md). For
+day-to-day mods, use the **`pivotlib`** abstraction layer ([PIVOTLIB.md](docs/PIVOTLIB.md)):
+
+```lua
+local pivotlib = require("pivotlib")
+
+-- proxy objects: form + controls, with lazy field/method resolution
+local form = pivotlib.main()
+form:SetFrameNumber(1)          -- call a published method
+local play = form.PlayButton    -- an object, not a raw pointer
+
+-- semantic helpers
+pivotlib.set_frame(3)
+pivotlib.play()
+pivotlib.frame_status("hello mod")
+pivotlib.every(1000, function()
+    pivotlib.log("tick: " .. tostring(pivotlib.frame()))
+end)
+```
+
+Raw usage is still available:
+
 ```lua
 local form = pivot.get_main_form()
 
@@ -46,7 +68,10 @@ pivot.on_update(function(frame) ... end)
 ## Docs
 
 - [Getting Started](docs/GETTING_STARTED.md)
+- [pivotlib — abstraction layer](docs/PIVOTLIB.md)
 - [Lua API reference](docs/MOD_API.md)
+- [Published RTTI catalog](docs/CATALOG.md)
+- [All published classes](docs/CLASSES.md)
 - [Building from source](docs/BUILDING.md)
 - [Changelog](CHANGELOG.md)
 
@@ -54,11 +79,12 @@ pivot.on_update(function(frame) ... end)
 
 ```
 pivotkit/
-├── src/        # pivotkit.c (host DLL) + injector.c (loader)
+├── src/        # pivotkit.cpp (host DLL) + injector.c (loader)
 ├── lua/        # Lua 5.4.8 (vendored)
-├── mods/       # sample Lua mods
-├── tools/      # RTTI dump helper
-├── docs/       # guides
+├── mods/       # 00_pivotlib.lua (abstraction layer) + sample mods
+├── tools/      # RTTI dump helper + lua.exe test builder
+├── tests/      # pivotlib tests against a mock pivot API
+├── docs/       # guides + generated RTTI catalog
 └── build.bat   # MSVC x86 build
 ```
 

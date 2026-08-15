@@ -1,0 +1,1539 @@
+{
+  "info": {
+    "class": "TMainForm",
+    "typeinfo": "0xB1AF40",
+    "class_type": "0xB14D68",
+    "vmt_base": "0xB14D5C",
+    "method_count": 159,
+    "field_count": 146
+  },
+  "methods": [
+    {
+      "name": "TransScrollBarChange",
+      "address": "0x00B248B8",
+      "area": "ui"
+    },
+    {
+      "name": "RateScrollBarChange",
+      "address": "0x00B2AF0C",
+      "area": "ui"
+    },
+    {
+      "name": "FormCreate",
+      "address": "0x00B1B018",
+      "area": "other"
+    },
+    {
+      "name": "CreateStickmanType",
+      "address": "0x00B1CE84",
+      "area": "other"
+    },
+    {
+      "name": "CreateFigureType1Click",
+      "address": "0x00B29C78",
+      "area": "figures"
+    },
+    {
+      "name": "SetFrameTween",
+      "address": "0x00B2278C",
+      "area": "playback"
+    },
+    {
+      "name": "SetNumFrames",
+      "address": "0x00B22940",
+      "area": "playback"
+    },
+    {
+      "name": "PlayTimerTimer",
+      "address": "0x00B2A9A8",
+      "area": "playback"
+    },
+    {
+      "name": "StopButtonClick",
+      "address": "0x00B2AD68",
+      "area": "playback"
+    },
+    {
+      "name": "CheckUnstoredFrame",
+      "address": "0x00B26300",
+      "area": "playback"
+    },
+    {
+      "name": "SelectFrame",
+      "address": "0x00B263AC",
+      "area": "playback"
+    },
+    {
+      "name": "DrawFrameNumber",
+      "address": "0x00B27618",
+      "area": "playback"
+    },
+    {
+      "name": "IsFrameSelected",
+      "address": "0x00B2773C",
+      "area": "playback"
+    },
+    {
+      "name": "GetFrameTween",
+      "address": "0x00B2774C",
+      "area": "playback"
+    },
+    {
+      "name": "FormActivate",
+      "address": "0x00B1BCE0",
+      "area": "other"
+    },
+    {
+      "name": "FormResize",
+      "address": "0x00B1D8F8",
+      "area": "other"
+    },
+    {
+      "name": "NewProject",
+      "address": "0x00B1C7C8",
+      "area": "file"
+    },
+    {
+      "name": "DestroyProject",
+      "address": "0x00B1CA6C",
+      "area": "other"
+    },
+    {
+      "name": "LoadProject",
+      "address": "0x00B27B54",
+      "area": "file"
+    },
+    {
+      "name": "Undo1Click",
+      "address": "0x00B2B6A8",
+      "area": "file"
+    },
+    {
+      "name": "Redo1Click",
+      "address": "0x00B2B950",
+      "area": "file"
+    },
+    {
+      "name": "InitUndo",
+      "address": "0x00B2B300",
+      "area": "file"
+    },
+    {
+      "name": "AssignUndo",
+      "address": "0x00B2B45C",
+      "area": "file"
+    },
+    {
+      "name": "EndDrag",
+      "address": "0x00B20DFC",
+      "area": "other"
+    },
+    {
+      "name": "New1Click",
+      "address": "0x00B2775C",
+      "area": "file"
+    },
+    {
+      "name": "OpenAnimation1Click",
+      "address": "0x00B27824",
+      "area": "file"
+    },
+    {
+      "name": "SetAnimationDimensions",
+      "address": "0x00B29518",
+      "area": "other"
+    },
+    {
+      "name": "SetEditingArea",
+      "address": "0x00B1DA34",
+      "area": "canvas"
+    },
+    {
+      "name": "SetScaleEditFromScale",
+      "address": "0x00B24A38",
+      "area": "other"
+    },
+    {
+      "name": "SetFigureControls",
+      "address": "0x00B24B18",
+      "area": "figures"
+    },
+    {
+      "name": "SetFigureStatus",
+      "address": "0x00B25468",
+      "area": "figures"
+    },
+    {
+      "name": "SetFrameStatus",
+      "address": "0x00B24FC0",
+      "area": "playback"
+    },
+    {
+      "name": "SetSegmentStatus",
+      "address": "0x00B257B8",
+      "area": "figures"
+    },
+    {
+      "name": "SetFrameNumber",
+      "address": "0x00B25B40",
+      "area": "playback"
+    },
+    {
+      "name": "EnableFigureControls",
+      "address": "0x00B25D6C",
+      "area": "figures"
+    },
+    {
+      "name": "IntToStr2",
+      "address": "0x00B25CEC",
+      "area": "other"
+    },
+    {
+      "name": "IntToStr3",
+      "address": "0x00B25D24",
+      "area": "other"
+    },
+    {
+      "name": "SetEditFrame",
+      "address": "0x00B1F16C",
+      "area": "playback"
+    },
+    {
+      "name": "FindOnions",
+      "address": "0x00B1F3D4",
+      "area": "other"
+    },
+    {
+      "name": "Options1Click",
+      "address": "0x00B2A3E4",
+      "area": "other"
+    },
+    {
+      "name": "FormClose",
+      "address": "0x00B2A6D8",
+      "area": "other"
+    },
+    {
+      "name": "SaveProjectAsPiv",
+      "address": "0x00B1CCBC",
+      "area": "file"
+    },
+    {
+      "name": "RemoveExtention",
+      "address": "0x00B28C14",
+      "area": "file"
+    },
+    {
+      "name": "SaveAs1Click",
+      "address": "0x00B28818",
+      "area": "file"
+    },
+    {
+      "name": "SetCursor",
+      "address": "0x00B1CE30",
+      "area": "other"
+    },
+    {
+      "name": "Save1Click",
+      "address": "0x00B28AE0",
+      "area": "file"
+    },
+    {
+      "name": "AddFigure",
+      "address": "0x00B21DC0",
+      "area": "figures"
+    },
+    {
+      "name": "DrawFigures",
+      "address": "0x00B1F848",
+      "area": "figures"
+    },
+    {
+      "name": "ReDrawFigure",
+      "address": "0x00B1FD3C",
+      "area": "figures"
+    },
+    {
+      "name": "RecursiveReDraw",
+      "address": "0x00B202B8",
+      "area": "other"
+    },
+    {
+      "name": "DrawAnimBorderLines",
+      "address": "0x00B1D588",
+      "area": "figures"
+    },
+    {
+      "name": "DrawGhostBackground",
+      "address": "0x00B1D36C",
+      "area": "other"
+    },
+    {
+      "name": "DrawGhost",
+      "address": "0x00B1D0E4",
+      "area": "other"
+    },
+    {
+      "name": "DrawGhostEdit",
+      "address": "0x00B1D1E8",
+      "area": "other"
+    },
+    {
+      "name": "EditingScrollBoxClick",
+      "address": "0x00B20490",
+      "area": "canvas"
+    },
+    {
+      "name": "EditPaintBoxMouseDown",
+      "address": "0x00B204A4",
+      "area": "other"
+    },
+    {
+      "name": "EditPaintBoxMouseUp",
+      "address": "0x00B20920",
+      "area": "other"
+    },
+    {
+      "name": "EditPaintBoxMouseMove",
+      "address": "0x00B21134",
+      "area": "other"
+    },
+    {
+      "name": "DoubleClickTimerTimer",
+      "address": "0x00B20DE8",
+      "area": "other"
+    },
+    {
+      "name": "SelectBoxTimerTimer",
+      "address": "0x00B21554",
+      "area": "other"
+    },
+    {
+      "name": "AddFigureButtonClick",
+      "address": "0x00B218C4",
+      "area": "figures"
+    },
+    {
+      "name": "BackgroundButtonClick",
+      "address": "0x00B219C0",
+      "area": "ui"
+    },
+    {
+      "name": "SetBackground",
+      "address": "0x00B21A94",
+      "area": "other"
+    },
+    {
+      "name": "StoreEditedFrame",
+      "address": "0x00B2228C",
+      "area": "playback"
+    },
+    {
+      "name": "NextFrameButtonClick",
+      "address": "0x00B22034",
+      "area": "playback"
+    },
+    {
+      "name": "FindSelectedFrameInList",
+      "address": "0x00B26720",
+      "area": "playback"
+    },
+    {
+      "name": "ToggleSelectedFrame",
+      "address": "0x00B26760",
+      "area": "playback"
+    },
+    {
+      "name": "Delete1Click",
+      "address": "0x00B26898",
+      "area": "other"
+    },
+    {
+      "name": "Insert1Click",
+      "address": "0x00B26F74",
+      "area": "other"
+    },
+    {
+      "name": "ShiftFrames",
+      "address": "0x00B2D75C",
+      "area": "playback"
+    },
+    {
+      "name": "InsertPaste1Click",
+      "address": "0x00B2BF00",
+      "area": "other"
+    },
+    {
+      "name": "SaveSelected1Click",
+      "address": "0x00B26D60",
+      "area": "file"
+    },
+    {
+      "name": "MultiSelect1Click",
+      "address": "0x00B27550",
+      "area": "other"
+    },
+    {
+      "name": "PopupMenu1Popup",
+      "address": "0x00B275B0",
+      "area": "ui"
+    },
+    {
+      "name": "DeleteSelFrameButtonClick",
+      "address": "0x00B26B30",
+      "area": "playback"
+    },
+    {
+      "name": "CopySelFrameButtonClick",
+      "address": "0x00B26F64",
+      "area": "playback"
+    },
+    {
+      "name": "PasteFrameButtonClick",
+      "address": "0x00B2BEC4",
+      "area": "playback"
+    },
+    {
+      "name": "PlayButtonClick",
+      "address": "0x00B2A7E8",
+      "area": "playback"
+    },
+    {
+      "name": "EnableControlsPlaying",
+      "address": "0x00B2B168",
+      "area": "playback"
+    },
+    {
+      "name": "DeleteFigureButtonClick",
+      "address": "0x00B229FC",
+      "area": "figures"
+    },
+    {
+      "name": "EditTypeButtonClick",
+      "address": "0x00B23040",
+      "area": "ui"
+    },
+    {
+      "name": "CenterButtonClick",
+      "address": "0x00B23960",
+      "area": "figures"
+    },
+    {
+      "name": "FlipButtonClick",
+      "address": "0x00B23B34",
+      "area": "figures"
+    },
+    {
+      "name": "ColorButtonClick",
+      "address": "0x00B23CA4",
+      "area": "figures"
+    },
+    {
+      "name": "OrderButtonClick",
+      "address": "0x00B23F1C",
+      "area": "figures"
+    },
+    {
+      "name": "ChangeFigOrder",
+      "address": "0x00B23F28",
+      "area": "figures"
+    },
+    {
+      "name": "DuplicateFigures1Click",
+      "address": "0x00B240CC",
+      "area": "figures"
+    },
+    {
+      "name": "JoinButtonClick",
+      "address": "0x00B24248",
+      "area": "figures"
+    },
+    {
+      "name": "EditPaintBoxClick",
+      "address": "0x00B1EE4C",
+      "area": "other"
+    },
+    {
+      "name": "CopyFigureButtonClick",
+      "address": "0x00B245A0",
+      "area": "figures"
+    },
+    {
+      "name": "PasteFigureButtonClick",
+      "address": "0x00B245FC",
+      "area": "figures"
+    },
+    {
+      "name": "TransScrollBarTracking",
+      "address": "0x00B24764",
+      "area": "ui"
+    },
+    {
+      "name": "ScaleEditChange",
+      "address": "0x00B23488",
+      "area": "other"
+    },
+    {
+      "name": "Export1Click",
+      "address": "0x00B27F90",
+      "area": "file"
+    },
+    {
+      "name": "LoadBackground1Click",
+      "address": "0x00B28CF0",
+      "area": "file"
+    },
+    {
+      "name": "LoadSprite1Click",
+      "address": "0x00B29D6C",
+      "area": "figures"
+    },
+    {
+      "name": "LoadFigure1Click",
+      "address": "0x00B2966C",
+      "area": "figures"
+    },
+    {
+      "name": "Exit1Click",
+      "address": "0x00B2A3DC",
+      "area": "other"
+    },
+    {
+      "name": "SelectAll1Click",
+      "address": "0x00B2A420",
+      "area": "other"
+    },
+    {
+      "name": "EditJoinedFigures1Click",
+      "address": "0x00B2DD7C",
+      "area": "figures"
+    },
+    {
+      "name": "TweenToTimelineClick",
+      "address": "0x00B2D8E0",
+      "area": "playback"
+    },
+    {
+      "name": "SetNumTempFrames",
+      "address": "0x00B2DCE0",
+      "area": "playback"
+    },
+    {
+      "name": "ShowHandles1Click",
+      "address": "0x00B2E154",
+      "area": "canvas"
+    },
+    {
+      "name": "SVG1Click",
+      "address": "0x00B2BBF8",
+      "area": "file"
+    },
+    {
+      "name": "SVGnohandles1Click",
+      "address": "0x00B2BCE8",
+      "area": "canvas"
+    },
+    {
+      "name": "SaveSVG",
+      "address": "0x00B2BF28",
+      "area": "file"
+    },
+    {
+      "name": "NextFrameButtonMouseDown",
+      "address": "0x00B2BDF4",
+      "area": "playback"
+    },
+    {
+      "name": "Deletefiguresoutsidearea1Click",
+      "address": "0x00B2CD84",
+      "area": "figures"
+    },
+    {
+      "name": "BatchLoadSave1Click",
+      "address": "0x00B2D334",
+      "area": "file"
+    },
+    {
+      "name": "BatchLoadSaveStkClick",
+      "address": "0x00B2D4F8",
+      "area": "file"
+    },
+    {
+      "name": "FormMouseWheel",
+      "address": "0x00B1DB34",
+      "area": "other"
+    },
+    {
+      "name": "FormKeyDown",
+      "address": "0x00B1DD4C",
+      "area": "other"
+    },
+    {
+      "name": "FormKeyUp",
+      "address": "0x00B1ECD8",
+      "area": "other"
+    },
+    {
+      "name": "EditImageMouseEnter",
+      "address": "0x00B1EE3C",
+      "area": "file"
+    },
+    {
+      "name": "EditImageMouseLeave",
+      "address": "0x00B1EE44",
+      "area": "file"
+    },
+    {
+      "name": "PivotHelp1Click",
+      "address": "0x00B2A498",
+      "area": "other"
+    },
+    {
+      "name": "ViewReadMeFile1Click",
+      "address": "0x00B2A518",
+      "area": "other"
+    },
+    {
+      "name": "About1Click",
+      "address": "0x00B2A658",
+      "area": "other"
+    },
+    {
+      "name": "DragTimerTimer",
+      "address": "0x00B211F8",
+      "area": "other"
+    },
+    {
+      "name": "TextMenuItemClick",
+      "address": "0x00B29D48",
+      "area": "ui"
+    },
+    {
+      "name": "BackgroundColor1Click",
+      "address": "0x00B291C8",
+      "area": "figures"
+    },
+    {
+      "name": "ZoomChange",
+      "address": "0x00B2DDEC",
+      "area": "canvas"
+    },
+    {
+      "name": "ZInMenuItemClick",
+      "address": "0x00B2DEAC",
+      "area": "ui"
+    },
+    {
+      "name": "ZOutMenuItemClick",
+      "address": "0x00B2DF08",
+      "area": "ui"
+    },
+    {
+      "name": "Z100MenuItemClick",
+      "address": "0x00B2DF64",
+      "area": "ui"
+    },
+    {
+      "name": "Z200MenuItemClick",
+      "address": "0x00B2DFA0",
+      "area": "ui"
+    },
+    {
+      "name": "Z50MenuItemClick",
+      "address": "0x00B2DFE4",
+      "area": "ui"
+    },
+    {
+      "name": "ZSelMenuItemClick",
+      "address": "0x00B2E028",
+      "area": "ui"
+    },
+    {
+      "name": "ZAnimMenuItemClick",
+      "address": "0x00B2E07C",
+      "area": "ui"
+    },
+    {
+      "name": "ShowCamMenuItemClick",
+      "address": "0x00B2E190",
+      "area": "canvas"
+    },
+    {
+      "name": "ResetCamMenuItemClick",
+      "address": "0x00B2E1DC",
+      "area": "canvas"
+    },
+    {
+      "name": "ZCamMenuItemClick",
+      "address": "0x00B2E0DC",
+      "area": "canvas"
+    },
+    {
+      "name": "ExportTestItemClick",
+      "address": "0x00B287A0",
+      "area": "file"
+    },
+    {
+      "name": "EnableControlsExport",
+      "address": "0x00B285E4",
+      "area": "file"
+    },
+    {
+      "name": "CopyCamMenuItemClick",
+      "address": "0x00B2E2C4",
+      "area": "canvas"
+    },
+    {
+      "name": "PasteCamMenuItemClick",
+      "address": "0x00B2E3B0",
+      "area": "canvas"
+    },
+    {
+      "name": "RecentMenuItemClick",
+      "address": "0x00B2F1B0",
+      "area": "ui"
+    },
+    {
+      "name": "SegmentInputMenuItemClick",
+      "address": "0x00B2F33C",
+      "area": "figures"
+    },
+    {
+      "name": "DownloadFigMenuItemClick",
+      "address": "0x00B2A670",
+      "area": "figures"
+    },
+    {
+      "name": "PlayZoomMenuItemClick",
+      "address": "0x00B2E128",
+      "area": "playback"
+    },
+    {
+      "name": "RepeatCheckBoxChange",
+      "address": "0x00B2AEF4",
+      "area": "playback"
+    },
+    {
+      "name": "SaveV4MenuItemClick",
+      "address": "0x00B2BDD8",
+      "area": "ui"
+    },
+    {
+      "name": "TweenSpinEditChange",
+      "address": "0x00B22734",
+      "area": "playback"
+    },
+    {
+      "name": "Deleteunusedfiguretypes1Click",
+      "address": "0x00B2CFB0",
+      "area": "figures"
+    },
+    {
+      "name": "ScaleEditKeyDown",
+      "address": "0x00B23640",
+      "area": "other"
+    },
+    {
+      "name": "DragDropTimerTimer",
+      "address": "0x00B2FEB0",
+      "area": "other"
+    },
+    {
+      "name": "AlignCanvases",
+      "address": "0x00B2EC04",
+      "area": "canvas"
+    },
+    {
+      "name": "RestoreCanvasZoom",
+      "address": "0x00B2EE5C",
+      "area": "canvas"
+    },
+    {
+      "name": "FormDeactivate",
+      "address": "0x00B1BCDC",
+      "area": "other"
+    },
+    {
+      "name": "ResetPoseMenuItemClick",
+      "address": "0x00B241E8",
+      "area": "figures"
+    },
+    {
+      "name": "ImportSVGMenuItemClick",
+      "address": "0x00B2FEF8",
+      "area": "ui"
+    },
+    {
+      "name": "AlignCamMenuItemClick",
+      "address": "0x00B2E62C",
+      "area": "canvas"
+    },
+    {
+      "name": "ApplyCamMenuItemClick",
+      "address": "0x00B2E848",
+      "area": "canvas"
+    },
+    {
+      "name": "CenterCamFigsMenuItemClick",
+      "address": "0x00B2E904",
+      "area": "figures"
+    },
+    {
+      "name": "UpdateTheme",
+      "address": "0x00B30198",
+      "area": "other"
+    },
+    {
+      "name": "ScaleEditMouseWheel",
+      "address": "0x00B235CC",
+      "area": "other"
+    },
+    {
+      "name": "InsertTweenMenuItemClick",
+      "address": "0x00B26FF8",
+      "area": "playback"
+    },
+    {
+      "name": "EditModeMenuItemClick",
+      "address": "0x00B30A18",
+      "area": "canvas"
+    },
+    {
+      "name": "RenameFigsMenuItemClick",
+      "address": "0x00B2D5D8",
+      "area": "figures"
+    }
+  ],
+  "fields": [
+    {
+      "name": "MainMenu1",
+      "offset": "0x02F8",
+      "area": "ui"
+    },
+    {
+      "name": "File1",
+      "offset": "0x02FC",
+      "area": "other"
+    },
+    {
+      "name": "Panel1",
+      "offset": "0x0300",
+      "area": "other"
+    },
+    {
+      "name": "SelFigPanel",
+      "offset": "0x0304",
+      "area": "figures"
+    },
+    {
+      "name": "ImageList1",
+      "offset": "0x0308",
+      "area": "file"
+    },
+    {
+      "name": "Edit1",
+      "offset": "0x030C",
+      "area": "other"
+    },
+    {
+      "name": "New1",
+      "offset": "0x0310",
+      "area": "file"
+    },
+    {
+      "name": "OpenAnimation1",
+      "offset": "0x0314",
+      "area": "file"
+    },
+    {
+      "name": "Save1",
+      "offset": "0x0318",
+      "area": "file"
+    },
+    {
+      "name": "SaveAs1",
+      "offset": "0x031C",
+      "area": "file"
+    },
+    {
+      "name": "Export1",
+      "offset": "0x0320",
+      "area": "file"
+    },
+    {
+      "name": "AnimatedGif1",
+      "offset": "0x0324",
+      "area": "playback"
+    },
+    {
+      "name": "Video1",
+      "offset": "0x0328",
+      "area": "file"
+    },
+    {
+      "name": "SeparateImages1",
+      "offset": "0x032C",
+      "area": "file"
+    },
+    {
+      "name": "N1",
+      "offset": "0x0330",
+      "area": "other"
+    },
+    {
+      "name": "LoadBackground1",
+      "offset": "0x0334",
+      "area": "file"
+    },
+    {
+      "name": "LoadSprite1",
+      "offset": "0x0338",
+      "area": "figures"
+    },
+    {
+      "name": "N3",
+      "offset": "0x033C",
+      "area": "other"
+    },
+    {
+      "name": "LoadFigure1",
+      "offset": "0x0340",
+      "area": "figures"
+    },
+    {
+      "name": "CreateFigureType1",
+      "offset": "0x0344",
+      "area": "figures"
+    },
+    {
+      "name": "N2",
+      "offset": "0x0348",
+      "area": "other"
+    },
+    {
+      "name": "Exit1",
+      "offset": "0x034C",
+      "area": "other"
+    },
+    {
+      "name": "Help1",
+      "offset": "0x0350",
+      "area": "other"
+    },
+    {
+      "name": "SVG1",
+      "offset": "0x0354",
+      "area": "file"
+    },
+    {
+      "name": "SVGnohandles1",
+      "offset": "0x0358",
+      "area": "canvas"
+    },
+    {
+      "name": "Deletefiguresoutsidearea1",
+      "offset": "0x035C",
+      "area": "figures"
+    },
+    {
+      "name": "BatchLoadSave1",
+      "offset": "0x0360",
+      "area": "file"
+    },
+    {
+      "name": "Undo1",
+      "offset": "0x0364",
+      "area": "file"
+    },
+    {
+      "name": "Redo1",
+      "offset": "0x0368",
+      "area": "file"
+    },
+    {
+      "name": "N5",
+      "offset": "0x036C",
+      "area": "other"
+    },
+    {
+      "name": "SelectAll1",
+      "offset": "0x0370",
+      "area": "other"
+    },
+    {
+      "name": "DuplicateFigures1",
+      "offset": "0x0374",
+      "area": "figures"
+    },
+    {
+      "name": "EditJoinedFigures1",
+      "offset": "0x0378",
+      "area": "figures"
+    },
+    {
+      "name": "N6",
+      "offset": "0x037C",
+      "area": "other"
+    },
+    {
+      "name": "TweenToTimeline",
+      "offset": "0x0380",
+      "area": "playback"
+    },
+    {
+      "name": "N4",
+      "offset": "0x0384",
+      "area": "other"
+    },
+    {
+      "name": "DeleteFrames1",
+      "offset": "0x0388",
+      "area": "playback"
+    },
+    {
+      "name": "CopyFrames1",
+      "offset": "0x038C",
+      "area": "playback"
+    },
+    {
+      "name": "PasteFrames1",
+      "offset": "0x0390",
+      "area": "playback"
+    },
+    {
+      "name": "N7",
+      "offset": "0x0394",
+      "area": "other"
+    },
+    {
+      "name": "Options1",
+      "offset": "0x0398",
+      "area": "other"
+    },
+    {
+      "name": "PivotHelp1",
+      "offset": "0x039C",
+      "area": "other"
+    },
+    {
+      "name": "ViewReadMeFile1",
+      "offset": "0x03A0",
+      "area": "other"
+    },
+    {
+      "name": "About1",
+      "offset": "0x03A4",
+      "area": "other"
+    },
+    {
+      "name": "FrameLabel",
+      "offset": "0x03A8",
+      "area": "playback"
+    },
+    {
+      "name": "TweenLabel",
+      "offset": "0x03AC",
+      "area": "playback"
+    },
+    {
+      "name": "TweenSpinEdit",
+      "offset": "0x03B0",
+      "area": "playback"
+    },
+    {
+      "name": "SelectedGroupBox",
+      "offset": "0x03B4",
+      "area": "other"
+    },
+    {
+      "name": "GroupBox2",
+      "offset": "0x03B8",
+      "area": "other"
+    },
+    {
+      "name": "BackgroundButton",
+      "offset": "0x03BC",
+      "area": "ui"
+    },
+    {
+      "name": "AddFigureButton",
+      "offset": "0x03C0",
+      "area": "figures"
+    },
+    {
+      "name": "NextFrameButton",
+      "offset": "0x03C4",
+      "area": "playback"
+    },
+    {
+      "name": "EditTypeButton",
+      "offset": "0x03C8",
+      "area": "ui"
+    },
+    {
+      "name": "DeleteFigureButton",
+      "offset": "0x03CC",
+      "area": "figures"
+    },
+    {
+      "name": "CenterButton",
+      "offset": "0x03D0",
+      "area": "figures"
+    },
+    {
+      "name": "FlipButton",
+      "offset": "0x03D4",
+      "area": "figures"
+    },
+    {
+      "name": "DeleteSelFrameButton",
+      "offset": "0x03D8",
+      "area": "playback"
+    },
+    {
+      "name": "ColorButton",
+      "offset": "0x03DC",
+      "area": "figures"
+    },
+    {
+      "name": "ColorRectangle",
+      "offset": "0x03E0",
+      "area": "figures"
+    },
+    {
+      "name": "JoinButton",
+      "offset": "0x03E4",
+      "area": "figures"
+    },
+    {
+      "name": "FrontButton",
+      "offset": "0x03E8",
+      "area": "ui"
+    },
+    {
+      "name": "BackButton",
+      "offset": "0x03EC",
+      "area": "ui"
+    },
+    {
+      "name": "CopyFigureButton",
+      "offset": "0x03F0",
+      "area": "figures"
+    },
+    {
+      "name": "PasteFigureButton",
+      "offset": "0x03F4",
+      "area": "figures"
+    },
+    {
+      "name": "CopySelFrameButton",
+      "offset": "0x03F8",
+      "area": "playback"
+    },
+    {
+      "name": "PasteFrameButton",
+      "offset": "0x03FC",
+      "area": "playback"
+    },
+    {
+      "name": "PlayButton",
+      "offset": "0x0400",
+      "area": "playback"
+    },
+    {
+      "name": "StopButton",
+      "offset": "0x0404",
+      "area": "playback"
+    },
+    {
+      "name": "RepeatCheckBox",
+      "offset": "0x0408",
+      "area": "playback"
+    },
+    {
+      "name": "PopupMenu1",
+      "offset": "0x040C",
+      "area": "ui"
+    },
+    {
+      "name": "Insert1",
+      "offset": "0x0410",
+      "area": "other"
+    },
+    {
+      "name": "InsertPaste1",
+      "offset": "0x0414",
+      "area": "other"
+    },
+    {
+      "name": "Delete1",
+      "offset": "0x0418",
+      "area": "other"
+    },
+    {
+      "name": "SaveSelected1",
+      "offset": "0x041C",
+      "area": "file"
+    },
+    {
+      "name": "MultiSelect1",
+      "offset": "0x0420",
+      "area": "other"
+    },
+    {
+      "name": "SelectBoxTimer",
+      "offset": "0x0424",
+      "area": "other"
+    },
+    {
+      "name": "OpenDialog1",
+      "offset": "0x0428",
+      "area": "ui"
+    },
+    {
+      "name": "SaveDialog1",
+      "offset": "0x042C",
+      "area": "ui"
+    },
+    {
+      "name": "DoubleClickTimer",
+      "offset": "0x0430",
+      "area": "other"
+    },
+    {
+      "name": "StyleBook1",
+      "offset": "0x0434",
+      "area": "other"
+    },
+    {
+      "name": "ExportDialog",
+      "offset": "0x0438",
+      "area": "ui"
+    },
+    {
+      "name": "NextFrameRect",
+      "offset": "0x043C",
+      "area": "playback"
+    },
+    {
+      "name": "BackgroundRect",
+      "offset": "0x0440",
+      "area": "other"
+    },
+    {
+      "name": "AddFigureRect",
+      "offset": "0x0444",
+      "area": "figures"
+    },
+    {
+      "name": "JoinRect",
+      "offset": "0x0448",
+      "area": "figures"
+    },
+    {
+      "name": "BatchLoadSaveStk",
+      "offset": "0x044C",
+      "area": "file"
+    },
+    {
+      "name": "TextMenuItem",
+      "offset": "0x0450",
+      "area": "ui"
+    },
+    {
+      "name": "BackgroundColor1",
+      "offset": "0x0454",
+      "area": "figures"
+    },
+    {
+      "name": "MenuItem2",
+      "offset": "0x0458",
+      "area": "ui"
+    },
+    {
+      "name": "SelectBox",
+      "offset": "0x045C",
+      "area": "other"
+    },
+    {
+      "name": "View1",
+      "offset": "0x0460",
+      "area": "other"
+    },
+    {
+      "name": "Z100MenuItem",
+      "offset": "0x0464",
+      "area": "ui"
+    },
+    {
+      "name": "Z200MenuItem",
+      "offset": "0x0468",
+      "area": "ui"
+    },
+    {
+      "name": "ZSelMenuItem",
+      "offset": "0x046C",
+      "area": "ui"
+    },
+    {
+      "name": "ZAnimMenuItem",
+      "offset": "0x0470",
+      "area": "ui"
+    },
+    {
+      "name": "ZInMenuItem",
+      "offset": "0x0474",
+      "area": "ui"
+    },
+    {
+      "name": "ZOutMenuItem",
+      "offset": "0x0478",
+      "area": "ui"
+    },
+    {
+      "name": "Z50MenuItem",
+      "offset": "0x047C",
+      "area": "ui"
+    },
+    {
+      "name": "MenuItem9",
+      "offset": "0x0480",
+      "area": "ui"
+    },
+    {
+      "name": "ShowHandlesMenuItem",
+      "offset": "0x0484",
+      "area": "canvas"
+    },
+    {
+      "name": "ScaleEdit",
+      "offset": "0x0488",
+      "area": "other"
+    },
+    {
+      "name": "ShowCamMenuItem",
+      "offset": "0x048C",
+      "area": "canvas"
+    },
+    {
+      "name": "ResetCamMenuItem",
+      "offset": "0x0490",
+      "area": "canvas"
+    },
+    {
+      "name": "MenuItem1",
+      "offset": "0x0494",
+      "area": "ui"
+    },
+    {
+      "name": "ZCamMenuItem",
+      "offset": "0x0498",
+      "area": "canvas"
+    },
+    {
+      "name": "StatusBar",
+      "offset": "0x049C",
+      "area": "ui"
+    },
+    {
+      "name": "FigureStatus",
+      "offset": "0x04A0",
+      "area": "figures"
+    },
+    {
+      "name": "ZoomLabel",
+      "offset": "0x04A4",
+      "area": "canvas"
+    },
+    {
+      "name": "FrameStatus",
+      "offset": "0x04A8",
+      "area": "playback"
+    },
+    {
+      "name": "SegmentStatus",
+      "offset": "0x04AC",
+      "area": "figures"
+    },
+    {
+      "name": "ZoomRectangle",
+      "offset": "0x04B0",
+      "area": "canvas"
+    },
+    {
+      "name": "CloseTimer",
+      "offset": "0x04B4",
+      "area": "other"
+    },
+    {
+      "name": "AnimatedPng1",
+      "offset": "0x04B8",
+      "area": "playback"
+    },
+    {
+      "name": "ExportTestItem",
+      "offset": "0x04BC",
+      "area": "file"
+    },
+    {
+      "name": "CopyCamMenuItem",
+      "offset": "0x04C0",
+      "area": "canvas"
+    },
+    {
+      "name": "PasteCamMenuItem",
+      "offset": "0x04C4",
+      "area": "canvas"
+    },
+    {
+      "name": "RecentMenuItem",
+      "offset": "0x04C8",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem0",
+      "offset": "0x04CC",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem1",
+      "offset": "0x04D0",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem2",
+      "offset": "0x04D4",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem3",
+      "offset": "0x04D8",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem4",
+      "offset": "0x04DC",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem5",
+      "offset": "0x04E0",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem6",
+      "offset": "0x04E4",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem7",
+      "offset": "0x04E8",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem8",
+      "offset": "0x04EC",
+      "area": "ui"
+    },
+    {
+      "name": "RecentMenuItem9",
+      "offset": "0x04F0",
+      "area": "ui"
+    },
+    {
+      "name": "SegmentInputMenuItem",
+      "offset": "0x04F4",
+      "area": "figures"
+    },
+    {
+      "name": "DownloadFigMenuItem",
+      "offset": "0x04F8",
+      "area": "figures"
+    },
+    {
+      "name": "PlayZoomMenuItem",
+      "offset": "0x04FC",
+      "area": "playback"
+    },
+    {
+      "name": "SaveV4MenuItem",
+      "offset": "0x0500",
+      "area": "ui"
+    },
+    {
+      "name": "Deleteunusedfiguretypes1",
+      "offset": "0x0504",
+      "area": "figures"
+    },
+    {
+      "name": "DragDropTimer",
+      "offset": "0x0508",
+      "area": "other"
+    },
+    {
+      "name": "ResetPoseMenuItem",
+      "offset": "0x050C",
+      "area": "figures"
+    },
+    {
+      "name": "ImportSVGMenuItem",
+      "offset": "0x0510",
+      "area": "ui"
+    },
+    {
+      "name": "AlignCamMenuItem",
+      "offset": "0x0514",
+      "area": "canvas"
+    },
+    {
+      "name": "ApplyCamMenuItem",
+      "offset": "0x0518",
+      "area": "canvas"
+    },
+    {
+      "name": "CenterCamFigsMenuItem",
+      "offset": "0x051C",
+      "area": "figures"
+    },
+    {
+      "name": "StyleBookDark",
+      "offset": "0x0520",
+      "area": "other"
+    },
+    {
+      "name": "ImageListColor",
+      "offset": "0x0524",
+      "area": "figures"
+    },
+    {
+      "name": "InsertTweenMenuItem",
+      "offset": "0x0528",
+      "area": "playback"
+    },
+    {
+      "name": "CamCenterXItem",
+      "offset": "0x052C",
+      "area": "figures"
+    },
+    {
+      "name": "CamCenterYItem",
+      "offset": "0x0530",
+      "area": "figures"
+    },
+    {
+      "name": "CamCenterXYItem",
+      "offset": "0x0534",
+      "area": "figures"
+    },
+    {
+      "name": "EditModeMenuItem",
+      "offset": "0x0538",
+      "area": "canvas"
+    },
+    {
+      "name": "RenameFigsMenuItem",
+      "offset": "0x053C",
+      "area": "figures"
+    }
+  ]
+}
