@@ -77,6 +77,6 @@ if errorlevel 1 ( echo [ERROR] link loader failed & exit /b 1 )
 
 echo.
 echo [OK] Built:
-echo   %OUT%pivotkit-loader.exe
-echo   %OUT%pivotkit.dll
+echo   %OUT%\pivotkit-loader.exe
+echo   %OUT%\pivotkit.dll
 endlocal

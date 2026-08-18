@@ -1,32 +1,11 @@
--- 00_pivotlib.lua - high-level abstraction layer over pivot.*
---
--- Loaded first (00_ prefix, alphabetical) and registered in package.preload,
--- so any mod can use `local pivotlib = require("pivotlib")` (or just the
--- global `pivotlib`) to get this same singleton.
---
--- What it adds on top of the raw pivot module:
---   * proxy objects  - form and controls become Lua objects; published fields
---                      are read lazily (object fields become proxies too) and
---                      published methods are called naturally:
---                        local f = pivotlib.main()
---                        f:SetFrameNumber(3)
---                        local play = f.PlayButton          -- a proxy
---   * full catalog   - every published method/field is reachable through the
---                      proxy metatable, no hand-written wrappers needed
---   * typed access   - string / float / double / bool fields via the new
---                      pivot.* accessors, with graceful fallbacks
---   * semantic API   - play/stop/frame nav, figure ops, zoom/camera, status
---                      bar text, file & undo, events
---   * events         - pivotlib.on_update(fn) (multi-subscriber) and
---                      pivotlib.every(ms, fn) on top of pivot's single tick
+-- High-level Lua API over pivot.*. Loaded before the example mods.
+-- It exposes cached proxies, typed accessors, semantic helpers, and events.
 
 local pivotlib = {}
 
 pivotlib.VERSION = "0.4.0"
 
--- ---------------------------------------------------------------------------
--- internal state
--- ---------------------------------------------------------------------------
+-- Internal state.
 
 local proxy_cache   = {}   -- addr(int) -> proxy
 local class_catalog = {}   -- classname -> { methods = set, fields = set }
@@ -37,10 +16,7 @@ local numframes_track = nil
 local dispatcher_on   = false
 local started         = false
 
--- ---------------------------------------------------------------------------
--- low-level helpers (addresses are always integers internally; converted to
--- lightuserdata via pivot.ptr only when calling the C API)
--- ---------------------------------------------------------------------------
+-- Addresses stay integer-valued until a C API call needs lightuserdata.
 
 local function to_int(v)
     if type(v) == "userdata" then return pivot.address(v) end
@@ -71,9 +47,7 @@ local function wrap_call(obj, name, ...)
     return r
 end
 
--- ---------------------------------------------------------------------------
--- catalog / introspection (cached per class name)
--- ---------------------------------------------------------------------------
+-- Catalog and introspection, cached by class name.
 
 local function obj_classname(v)
     local p = ptr_of(v)
@@ -130,9 +104,7 @@ function pivotlib.has_field(obj, name)
     return pivotlib.fields(obj)[name] == true
 end
 
--- ---------------------------------------------------------------------------
--- proxies
--- ---------------------------------------------------------------------------
+-- Proxy objects.
 
 local proxy_mt = {}
 
@@ -152,9 +124,7 @@ function proxy_mt.__index(self, key)
 
     if pivotlib.has_method(self, key) then
         local fn = function(...)
-            -- `obj:Method(...)` passes the proxy as the first argument; drop
-            -- it so the Delphi method only sees real args (`obj.Method(...)`
-            -- works too, unless the first real arg is the object itself).
+            -- Drop the proxy passed by colon syntax before calling Delphi.
             if select("#", ...) > 0 and (...) == self then
                 return wrap_call(self, key, select(2, ...))
             end
@@ -219,9 +189,7 @@ function pivotlib.main()
     return pivotlib.obj(f)
 end
 
--- ---------------------------------------------------------------------------
--- typed access & calls
--- ---------------------------------------------------------------------------
+-- Typed access and calls.
 
 local function wrap_result(r)
     if r and pivot.is_object and pivot.is_object(r) then
@@ -294,8 +262,7 @@ function pivotlib.set_bool(obj, name, value)
     return pcall(pivot.set_bool_field, p, name, value)
 end
 
--- Text convenience with graceful fallbacks (SetText/GetText methods first,
--- then published "Text" field).
+-- Prefer SetText/GetText, then fall back to the published Text field.
 function pivotlib.set_text(control, text)
     local p = ptr_of(control)
     if not p then return false end
@@ -314,9 +281,7 @@ function pivotlib.get_text(control)
     return ok2 and s2 or nil
 end
 
--- ---------------------------------------------------------------------------
--- playback & frames
--- ---------------------------------------------------------------------------
+-- Playback and frame helpers.
 
 local function main()
     local m = pivotlib.main()
@@ -372,8 +337,7 @@ function pivotlib.set_tween(v)
     return pcall(function() m:SetFrameTween(v) end)
 end
 
--- optional: keep frame tracking accurate by hooking SetFrameNumber. Not
--- enabled by default (hooks are a shared resource); call track_frames(true).
+-- Optional frame tracking through a shared hook.
 function pivotlib.track_frames(enabled)
     local m = main(); if not m then return false end
     local key = "SetFrameNumber"
@@ -388,9 +352,7 @@ function pivotlib.track_frames(enabled)
     end
 end
 
--- ---------------------------------------------------------------------------
--- figures & selection
--- ---------------------------------------------------------------------------
+-- Figure and selection helpers.
 
 function pivotlib.select_all()   local m = main(); return m and m:SelectAll1Click() or false end
 function pivotlib.duplicate()    local m = main(); return m and m:DuplicateFigures1Click() or false end
@@ -404,9 +366,7 @@ function pivotlib.paste_figure() local m = main(); return m and m:PasteFigureBut
 function pivotlib.edit_type()    local m = main(); return m and m:EditTypeButtonClick() or false end
 function pivotlib.reset_pose()   local m = main(); return m and m:ResetPoseMenuItemClick() or false end
 
--- ---------------------------------------------------------------------------
--- canvas / zoom / camera
--- ---------------------------------------------------------------------------
+-- Canvas, zoom, and camera helpers.
 
 function pivotlib.zoom_in()        local m = main(); return m and m:ZInMenuItemClick() or false end
 function pivotlib.zoom_out()       local m = main(); return m and m:ZOutMenuItemClick() or false end
@@ -425,9 +385,7 @@ function pivotlib.apply_cam()      local m = main(); return m and m:ApplyCamMenu
 function pivotlib.center_cam_figs() local m = main(); return m and m:CenterCamFigsMenuItemClick() or false end
 function pivotlib.zoom_cam()       local m = main(); return m and m:ZCamMenuItemClick() or false end
 
--- ---------------------------------------------------------------------------
--- status bar & UI
--- ---------------------------------------------------------------------------
+-- Status and UI helpers.
 
 local function status_label(name)
     local m = main()
@@ -442,9 +400,7 @@ function pivotlib.zoom_label(t)     local l = status_label("ZoomLabel");     ret
 function pivotlib.frame_label(t)    local l = status_label("FrameLabel");    return l and pivotlib.set_text(l, t) or false end
 function pivotlib.tween_label(t)    local l = status_label("TweenLabel");    return l and pivotlib.set_text(l, t) or false end
 
--- ---------------------------------------------------------------------------
--- file & undo
--- ---------------------------------------------------------------------------
+-- File and undo helpers.
 
 function pivotlib.undo() local m = main(); return m and m:Undo1Click() or false end
 function pivotlib.redo() local m = main(); return m and m:Redo1Click() or false end
@@ -457,8 +413,7 @@ function pivotlib.load_background() local m = main(); return m and m:LoadBackgro
 function pivotlib.load_sprite() local m = main(); return m and m:LoadSprite1Click() or false end
 function pivotlib.load_figure() local m = main(); return m and m:LoadFigure1Click() or false end
 
--- programmatic open/save (needs the string-aware call bridge). These are
--- best-effort: signatures aren't documented, so failures are reported.
+-- These calls are best-effort because their signatures are undocumented.
 function pivotlib.load_project(path)
     local m = main(); if not m then return false end
     local ok, err = pcall(pivot.call_string, ptr_of(m), "LoadProject", tostring(path))
@@ -466,7 +421,7 @@ function pivotlib.load_project(path)
     return ok
 end
 
--- Programmatic SVG export (best-effort: signatures not documented).
+-- SVG export is best-effort because its signatures are undocumented.
 function pivotlib.export_svg(path)
     local m = main(); if not m then return false, "no form" end
     local ok, err = pcall(pivot.call_string, ptr_of(m), "SaveSVG", tostring(path))
@@ -481,9 +436,7 @@ function pivotlib.export_svg_nohandles(path)
     return pcall(pivot.call_string, ptr_of(m), "SVGnohandles1Click", tostring(path))
 end
 
--- ---------------------------------------------------------------------------
--- keybindings (polled in the per-frame dispatcher; keys are virtual-key codes)
--- ---------------------------------------------------------------------------
+-- Keybindings use virtual-key codes and are polled each frame.
 
 local binds = {}   -- { vk, fn, down }
 
@@ -502,8 +455,7 @@ local function vk_of(key)
     return c  -- ASCII == VK for letters/digits
 end
 
--- Bind a key to a function. `key` is a VK code or a name ("P", "F5", ...).
--- Fires on the press edge (rising edge).
+-- Bind a key by VK code or name; callbacks fire on the rising edge.
 function pivotlib.bind(key, fn)
     local vk = vk_of(key)
     assert(vk, "pivotlib.bind: unknown key " .. tostring(key))
@@ -515,14 +467,11 @@ function pivotlib.unbind_all()
     for i = #binds, 1, -1 do binds[i] = nil end
 end
 
--- ---------------------------------------------------------------------------
--- hooks & mod manager
--- ---------------------------------------------------------------------------
+-- Hooks, commands, and mod reload.
 
 local hook_registry = {}   -- { obj = addr, method = name }
 
--- Same as pivot.hook but registered so pivotlib.reload / unhook_all can undo
--- every hook cleanly before re-running mods.
+-- Register hooks so reload and unhook_all can remove them.
 function pivotlib.hook(obj, method, fn)
     local p = ptr_of(obj)
     if not p then return false end
@@ -558,7 +507,7 @@ function pivotlib.unhook_all()
     end
 end
 
--- Command registry (a tiny in-mod console).
+-- In-mod command registry.
 local commands = {}
 
 function pivotlib.register_command(name, fn)
@@ -580,9 +529,7 @@ function pivotlib.run_command(name, ...)
     return pcall(fn, ...)
 end
 
--- Hot reload. With a mod name ("foo" -> foo.lua) only that mod re-runs; with
--- no argument every mod re-runs. All registered hooks are removed first so a
--- reload never double-hooks. Frame/timer handlers are reset on a full reload.
+-- Reload one mod or all mods; remove hooks before re-running code.
 function pivotlib.reload(modname)
     pivotlib.unhook_all()
     if modname then
@@ -593,15 +540,12 @@ function pivotlib.reload(modname)
     return pcall(pivot.reload)
 end
 
--- ---------------------------------------------------------------------------
--- scene / introspection (runtime instance discovery)
--- ---------------------------------------------------------------------------
+-- Runtime instance discovery.
 
 function pivotlib.class(name) return pivot.class(name) end
 function pivotlib.classname(v) return pivot.classname(ptr_of(v) or v) end
 
--- Return proxies for live instances of a class (by name, classType, or a
--- sample object).
+-- Return proxies for live instances by name, class type, or sample object.
 function pivotlib.scan(classname_or_obj, max)
     local ct
     if type(classname_or_obj) == "string" then
@@ -622,7 +566,7 @@ function pivotlib.scan(classname_or_obj, max)
     return out
 end
 
--- Class names in the image that mention "Figure" (figure/frame classes).
+-- Return class names containing "Figure".
 function pivotlib.figure_classes()
     local out = {}
     for _, name in ipairs(pivot.enum_classes() or {}) do
@@ -632,7 +576,7 @@ function pivotlib.figure_classes()
     return out
 end
 
--- Best-effort live figure instances (whatever figure/frame classes exist).
+-- Return live figure/frame instances when available.
 function pivotlib.figures()
     local out = {}
     for _, cls in ipairs(pivotlib.figure_classes()) do
@@ -643,8 +587,7 @@ function pivotlib.figures()
     return out
 end
 
--- Read a field with type detection: object -> proxy, Delphi string -> string,
--- otherwise the raw 32-bit value.
+-- Read a field as an object proxy, Delphi string, or raw 32-bit value.
 function pivotlib.read_field(obj, name)
     local p = ptr_of(obj)
     if not p then return nil end
@@ -659,7 +602,7 @@ function pivotlib.read_field(obj, name)
     return nil
 end
 
--- Probe the first live instance of a class: returns (proxy, {field=value,...}).
+-- Return the first live instance and its published field values.
 function pivotlib.probe(classname)
     local list = pivotlib.scan(classname, 1)
     if #list == 0 then return nil, nil end
@@ -671,11 +614,9 @@ function pivotlib.probe(classname)
     return inst, fields
 end
 
--- ---------------------------------------------------------------------------
--- console & bridge command dispatch
--- ---------------------------------------------------------------------------
+-- Console and bridge command dispatch.
 
--- Execute one console/bridge line: registered commands first, then Lua eval.
+-- Resolve registered commands before evaluating Lua.
 function pivotlib.console_exec(line)
     if type(line) ~= "string" then return nil end
     line = line:gsub("[\r\n]+$", "")
@@ -702,14 +643,7 @@ function pivotlib.console(show)
     return pivot.console()
 end
 
--- ---------------------------------------------------------------------------
--- input events (polling-based — SAFE: no inline hooks on Pivot's FMX handlers)
---
--- on_mouse_down/up/move and on_key_down/up are driven from the per-frame tick
--- by polling GetAsyncKeyState + cursor position, so they can never crash
--- pivot.exe. (Inline-hooking FMX canvas/key methods was found to cause
--- intermittent access violations, so the hook-based version was removed.)
--- ---------------------------------------------------------------------------
+-- Input events are polled from the per-frame tick; FMX handlers are not hooked.
 
 local mouse_down, mouse_move, mouse_up = {}, {}, {}
 local key_down_h, key_up_h = {}, {}
@@ -780,11 +714,9 @@ function pivotlib.on_mouse_move(fn) assert(type(fn) == "function"); mouse_move[#
 function pivotlib.on_key_down(fn)   assert(type(fn) == "function"); key_down_h[#key_down_h + 1] = fn; enable_input() end
 function pivotlib.on_key_up(fn)     assert(type(fn) == "function"); key_up_h[#key_up_h + 1] = fn; enable_input() end
 
--- ---------------------------------------------------------------------------
--- batch + undo
--- ---------------------------------------------------------------------------
+-- Batch and undo.
 
--- Run `fn` and (best-effort) commit it as a single undo action.
+-- Run fn and, when available, commit one undo action.
 function pivotlib.batch(fn)
     assert(type(fn) == "function", "pivotlib.batch: fn")
     local m = main()
@@ -795,9 +727,7 @@ function pivotlib.batch(fn)
     return ok, err
 end
 
--- ---------------------------------------------------------------------------
--- figure builder automation
--- ---------------------------------------------------------------------------
+-- Figure builder automation.
 
 function pivotlib.open_figure_builder()
     local m = main(); return m and m:EditTypeButtonClick() or false
@@ -808,9 +738,7 @@ function pivotlib.figure_builder()
     return list[1]
 end
 
--- ---------------------------------------------------------------------------
--- raw peek / pointer pinning / dump
--- ---------------------------------------------------------------------------
+-- Raw reads and private-offset discovery.
 
 function pivotlib.peek(obj, offset, kind)
     local p = ptr_of(obj)
@@ -818,9 +746,7 @@ function pivotlib.peek(obj, offset, kind)
     return pivot.peek(p, offset, kind or "u32")
 end
 
--- Scan live instances of `classname` for the given {kind, value} probes and
--- report every offset where a value lives. Use to pin the private offsets of
--- classes like TFigure (0 published fields).
+-- Find offsets matching probe values in live instances.
 function pivotlib.pin(classname, probes, max)
     assert(type(probes) == "table", "pivotlib.pin: probes table required")
     local out = {}
@@ -840,7 +766,7 @@ function pivotlib.pin(classname, probes, max)
     return out
 end
 
--- Dump raw 4-byte words of an object for manual offset exploration.
+-- Dump 4-byte words for offset exploration.
 function pivotlib.dump(obj, from, to)
     from = from or 0
     to = to or 0x200
@@ -852,9 +778,7 @@ function pivotlib.dump(obj, from, to)
     return rows
 end
 
--- ---------------------------------------------------------------------------
--- events
--- ---------------------------------------------------------------------------
+-- Update events and timers.
 
 local function install_dispatcher()
     if dispatcher_on then return end
@@ -895,14 +819,14 @@ local function install_dispatcher()
     end)
 end
 
--- Register a per-frame callback (multiple subscribers allowed).
+-- Register a per-frame callback.
 function pivotlib.on_update(fn)
     assert(type(fn) == "function", "on_update expects a function")
     update_handlers[#update_handlers + 1] = fn
     install_dispatcher()
 end
 
--- Run fn roughly every `ms` milliseconds (frame-count based, ~60fps).
+-- Run fn approximately every ms using frame counts at 60 FPS.
 function pivotlib.every(ms, fn)
     assert(type(fn) == "function", "every expects a function")
     local ticks = math.max(1, math.floor((ms or 1000) / (1000 / 60)))
@@ -918,9 +842,7 @@ function pivotlib.remove_menu_button()
     return pivot.remove_menu_button()
 end
 
--- ---------------------------------------------------------------------------
--- misc passthroughs
--- ---------------------------------------------------------------------------
+-- Direct passthroughs.
 
 function pivotlib.log(...) return pivot.log(...) end
 function pivotlib.sleep(ms) return pivot.sleep(ms) end
@@ -935,7 +857,7 @@ function pivotlib.sprite_show(h) return pivot.sprite_show(h) end
 function pivotlib.sprite_hide(h) return pivot.sprite_hide(h) end
 function pivotlib.sprite_destroy(h) return pivot.sprite_destroy(h) end
 
--- Canvas overlay (HUD) wrappers.
+-- Canvas overlay wrappers.
 function pivotlib.overlay_create()  return pivot.overlay_create() end
 function pivotlib.overlay_destroy() return pivot.overlay_destroy() end
 function pivotlib.overlay_begin()   return pivot.overlay_begin() end
@@ -953,7 +875,7 @@ function pivotlib.overlay_circle(x, y, r, argb)
 end
 function pivotlib.overlay_commit()  return pivot.overlay_commit() end
 
--- Convenience: draw `fn` into the canvas overlay every frame.
+-- Draw fn into the overlay every frame.
 function pivotlib.hud(fn)
     assert(type(fn) == "function", "pivotlib.hud: fn must be a function")
     pivotlib.overlay_create()
@@ -965,9 +887,7 @@ function pivotlib.hud(fn)
     end)
 end
 
--- ---------------------------------------------------------------------------
--- startup
--- ---------------------------------------------------------------------------
+-- Startup.
 
 function pivotlib.start()
     if started then return pivotlib end

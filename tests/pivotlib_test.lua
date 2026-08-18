@@ -1,10 +1,9 @@
--- pivotlib_test.lua - validates pivotlib against the mock pivot API.
--- Run: bin\lua.exe tests\pivotlib_test.lua   (from the pivotkit/ root)
+-- Validate pivotlib against the mock Pivot API.
 
 local mock = dofile("tests/mock_pivot.lua")
 _G.pivot = mock
 
--- ------------------------------------------------------------ build world
+-- Build a small mock scene.
 local form = mock.new_object("TMainForm", {
     PlayButton = nil, StopButton = nil,
     FrameStatus = nil, FigureStatus = nil, ZoomLabel = nil,
@@ -47,7 +46,7 @@ mock.publish(figureStatus, {
     SetText = function(t) mock.objects[figureStatus].fields.Text = t end,
 })
 
--- ------------------------------------------------------------ load library
+-- Load the library under test.
 local pivotlib = dofile("mods/00_pivotlib.lua")
 
 local pass, fail = 0, 0
@@ -63,36 +62,36 @@ end
 local h = function(addr) return mock.history(addr) end
 local last = function(addr) local t = h(addr); return t[#t] end
 
--- ------------------------------------------------------------ main proxy
+-- Main proxy.
 local m = pivotlib.main()
 check(m ~= nil, "main() returns a proxy")
 check(tostring(m):match("TMainForm"), "tostring shows class name (got: " .. tostring(m) .. ")")
 check(m.Class == "TMainForm", "proxy .Class")
 check(m.Address == form, "proxy .Address")
 
--- field access: object fields become proxies
+-- Object fields become proxies.
 local pb = m.PlayButton
 check(pb ~= nil, "PlayButton resolves")
 check(pb.Class == "TButton", "PlayButton is a TButton proxy")
 check(pb.Address == playBtn, "PlayButton points at the mock button")
 
--- method call, colon style
+-- Colon-style method call.
 local r = m:PlayButtonClick()
 check(r == 7, "m:PlayButtonClick() returns 7 (got " .. tostring(r) .. ")")
 check(last(form).name == "PlayButtonClick", "colon call recorded PlayButtonClick")
 
--- method call, dot style
+-- Dot-style method call.
 m.SelectAll1Click()
 check(last(form).name == "SelectAll1Click", "dot call recorded SelectAll1Click")
 check(#last(form).args == 0, "dot call passes no self argument")
 
--- catalog introspection
+-- Catalog introspection.
 local names = pivotlib.method_names(form)
 check(#names == 14, "method_names lists 14 published methods (got " .. #names .. ")")
 check(pivotlib.has_method(form, "SetFrameNumber"), "has_method SetFrameNumber")
 check(pivotlib.has_field(form, "PlayButton"), "has_field PlayButton")
 
--- ------------------------------------------------------------ playback
+-- Playback.
 pivotlib.set_frame(5)
 check(mock.objects[form]._frame == 5, "set_frame(5) reaches SetFrameNumber")
 pivotlib.set_num_frames(20)
@@ -107,11 +106,11 @@ check(last(form).name == "StopButtonClick", "stop() clicks StopButton")
 pivotlib.next_frame()
 check(last(form).name == "NextFrameButtonClick", "next_frame()")
 
--- frame() / num_frames() parsed from status text
+-- Frame parsing.
 check(pivotlib.frame() == 3, "frame() parses 'Frame 3 of 12' -> 3 (got " .. tostring(pivotlib.frame()) .. ")")
 check(pivotlib.num_frames() == 12, "num_frames() -> 12 (got " .. tostring(pivotlib.num_frames()) .. ")")
 
--- ------------------------------------------------------------ figures
+-- Figures.
 pivotlib.select_all()
 check(last(form).name == "SelectAll1Click", "select_all()")
 pivotlib.flip()
@@ -119,14 +118,14 @@ check(last(form).name == "FlipButtonClick", "flip()")
 pivotlib.center()
 check(last(form).name == "CenterButtonClick", "center()")
 
--- ------------------------------------------------------------ text
+-- Typed text access.
 pivotlib.set_text(figureStatus, "hello")
 check(pivotlib.get_text(figureStatus) == "hello", "set_text/get_text roundtrip")
 pivotlib.figure_status("selected 2")
 check(mock.objects[figureStatus].fields.Text == "selected 2", "figure_status() sets text")
 check(pivotlib.get_string(figureStatus, "Text") == "selected 2", "get_string reads Text")
 
--- ------------------------------------------------------------ events
+-- Update events and timers.
 local a, b = 0, 0
 pivotlib.on_update(function(fr) a = fr end)
 pivotlib.on_update(function(fr) b = fr * 2 end)
@@ -140,7 +139,7 @@ check(n == 1, "every(1000) fires after ~60 frames (n=" .. n .. ")")
 for i = 61, 120 do mock.update(i) end
 check(n == 2, "every(1000) fires again (n=" .. n .. ")")
 
--- ------------------------------------------------------------ scene / scan
+-- Scene discovery.
 local figA = mock.new_object("TFigure", { Name = "hero", X = 10, Y = 20 })
 local figB = mock.new_object("TFigure", { Name = "enemy", X = -5, Y = 7 })
 local figs = pivotlib.figures()
@@ -159,7 +158,7 @@ check(fields.X == 10 or fields.X == -5, "probe reads number field X")
 check(pivotlib.read_field(figA, "Name") == "hero", "read_field detects string field")
 check(pivotlib.read_field(figA, "X") == 10, "read_field detects number field")
 
--- ------------------------------------------------------------ hooks & mods
+-- Hooks, commands, and reload.
 pivotlib.hook(form, "SetFrameNumber", function(self, n) return nil end)
 pivotlib.hook(form, "GetFrameTween", function(self) return nil end)
 check(#mock.hooks == 2, "pivotlib.hook calls pivot.hook twice")
@@ -178,7 +177,7 @@ check(mock.reload_calls[#mock.reload_calls] == "hook_demo", "reload('hook_demo')
 pivotlib.reload()
 check(mock.reload_all_calls == 1, "reload() triggers full reload")
 
--- ------------------------------------------------------------ keybindings
+-- Keybindings.
 local pressed = 0
 pivotlib.bind("P", function() pressed = pressed + 1 end)
 pivotlib.bind("F5", function() pressed = pressed + 10 end)
@@ -200,7 +199,7 @@ mock.update(10)
 check(pressed == 12, "bind('F5') uses named VK (pressed=" .. pressed .. ")")
 mock.keys[0x74] = false
 
--- ------------------------------------------------------------ overlay
+-- Overlay.
 pivotlib.overlay_create()
 pivotlib.overlay_begin()
 pivotlib.overlay_text(10, 20, "hello hud", 14, 0xFFFF0000)
@@ -215,14 +214,14 @@ check(mock.overlay.items[1].t == "text" and mock.overlay.items[1].s == "hello hu
 check(mock.overlay.items[2].t == "line", "overlay_line recorded")
 check(mock.overlay.commits == 1, "overlay_commit recorded")
 
--- hud() convenience: draws every frame
+-- HUD callback.
 local hudCalls = 0
 pivotlib.hud(function() hudCalls = hudCalls + 1 end)
 mock.update(11)
 check(hudCalls == 1, "hud() runs its draw fn each frame")
 check(mock.overlay.begins >= 2, "hud() calls overlay_begin each frame")
 
--- ------------------------------------------------------------ console / bridge
+-- Console and bridge dispatch.
 pivotlib.register_command("hello2", function() return "world2" end)
 check(pivotlib.console_exec("hello2") == "world2", "console_exec runs registered command")
 check(pivotlib.console_exec("1 + 2") == "3", "console_exec evaluates Lua (1+2 -> 3)")
@@ -231,7 +230,7 @@ check(pivotlib.console_exec("nil + 1"):match("error"), "console_exec reports Lua
 check(_G.__pivot_console__("2 * 3") == "6", "__pivot_console__ global wired")
 check(pivotlib.console(true) == true, "console(true) shows console")
 
--- ------------------------------------------------------------ input events
+-- Polled input events.
 local mouseBtns, mouseXs, mouseYs = {}, {}, {}
 pivotlib.on_mouse_down(function(btn, x, y, shift)
     mouseBtns[#mouseBtns + 1] = btn; mouseXs[#mouseXs + 1] = x; mouseYs[#mouseYs + 1] = y
@@ -259,7 +258,7 @@ check(keys[1] == "80:P", "on_key_down receives key + char (got " .. tostring(key
 mock.keys[0x50] = false
 mock.update(34)
 
--- ------------------------------------------------------------ batch + undo
+-- Batch and undo.
 mock.publish(form, { AssignUndo = function(s) mock.objects[form]._undoid = s; return 0 end })
 local batched = false
 pivotlib.batch(function() batched = true end)
@@ -267,7 +266,7 @@ check(batched, "batch() runs fn")
 check(mock.objects[form]._undoid == "pivotlib batch", "batch() commits AssignUndo")
 check(last(form).name == "AssignUndo", "batch() called AssignUndo via call_string")
 
--- ------------------------------------------------------------ peek / pin / dump
+-- Raw memory inspection.
 mock.mem[figA] = { [0] = 7, [4] = 12, [8] = 99 }
 check(pivotlib.peek(figA, 4) == 12, "peek reads value at offset (got " .. tostring(pivotlib.peek(figA, 4)) .. ")")
 check(pivotlib.peek(figA, 0) == 7, "peek default kind u32")
@@ -280,11 +279,11 @@ for _, e in ipairs(pinned) do
 end
 check(hit, "pin finds offset 4 for value 12 in TFigure instances")
 
--- ------------------------------------------------------------ figure builder
+-- Figure builder discovery.
 local fbForm = mock.new_object("TFigureBuilderForm", {})
 check(pivotlib.figure_builder() ~= nil, "figure_builder() finds TFigureBuilderForm")
 check(pivotlib.figure_builder().Class == "TFigureBuilderForm", "figure_builder() class")
 
--- ------------------------------------------------------------ result
+-- Result.
 print(string.format("\nRESULT: %d passed, %d failed", pass, fail))
 if fail > 0 then os.exit(1) end

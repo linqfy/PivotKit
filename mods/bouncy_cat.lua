@@ -1,6 +1,4 @@
--- bouncy_cat.lua - beginner example using the generic sprite API.
--- Click "Spawn Cat" to release the cat; it bounces around the window like
--- the DVD screensaver logo.
+-- Beginner example using the sprite API.
 
 pivot.log("bouncy_cat: adding the Spawn Cat button...")
 
@@ -14,7 +12,7 @@ pivot.add_menu_button("Spawn Cat", function()
     end
     pivot.sprite_show(cat)
 
-    -- Centre it in the window and give it a gentle velocity.
+    -- Center it and set a gentle velocity.
     local l, t, r, b = pivot.window_rect()
     pivot.sprite_move(cat, (l + r) / 2, (t + b) / 2)
     pivot.sprite_velocity(cat, 3, 2)

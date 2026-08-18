@@ -1,90 +1,78 @@
-# Getting Started
+# Getting started
 
-## What this is
+PivotKit runs Lua files inside Pivot Animator 5.2.11. It is useful for small
+automations, runtime inspection, overlays, and experiments that would be hard
+to build into the application itself.
 
-`PivotKit` is a **code-injection mod loader** for [Pivot Animator](https://pivotanimator.net)
-5.2.11 (32-bit). It loads **Lua** scripts ("mods") into the running app so you
-can automate, observe, and modify what Pivot does — without touching its files.
+## Before installing
 
-> **⚠️ HEAVY BETA.** This injects code into `pivot.exe`. It may crash the app or
-> lose work. Back up your `.piv` files. Only the 32-bit v5.2.11 build of Pivot is
-> supported.
+- Use the **32-bit** Windows build of `pivot.exe` **5.2.11**.
+- Make a backup of your `.piv` files.
+- Keep the loader, DLL, and `pivotkit` folder beside `pivot.exe`.
 
-## Install
+This project injects code into another process. A mod or an unsupported Pivot
+build can crash the application.
 
-You need Pivot Animator 5.2.11 installed **or** just the portable folder. You
-also need the two binaries from the release:
+## Install a release
 
+Download the latest archive, extract it into the directory containing
+`pivot.exe`, and run `pivotkit-loader.exe`. The loader starts Pivot suspended,
+injects `pivotkit.dll`, and resumes it.
+
+If the loader cannot find Pivot, pass its full path:
+
+```text
+pivotkit-loader.exe "C:\Apps\Pivot Animator\pivot.exe"
 ```
-pivotkit.dll
-pivotkit-loader.exe
-```
 
-1. Copy `pivotkit.dll` and `pivotkit-loader.exe` into the **same folder as
-   `pivot.exe`**.
-2. Create a `pivotkit\mods\` folder next to `pivot.exe` (the release zip
-   already includes sample mods there).
-3. Double-click `pivotkit-loader.exe` instead of `pivot.exe`.
+Successful startup writes `pivotkit.log` beside `pivot.exe`. The log is the
+first place to look when a mod does not load.
 
-You should see Pivot open normally. If it worked, a `pivotkit.log` file appears
-next to `pivot.exe`.
+## Create a mod
 
-## Write your first mod
+Mods are Lua files under `pivotkit\mods\`. Use a filename with a numeric prefix
+for predictable startup order; `00_pivotlib.lua` must load before mods that
+call `require("pivotlib")`.
 
-Every `*.lua` file in `pivotkit\mods\` is loaded ~2 seconds after startup.
+Create `pivotkit\mods\10_first_mod.lua`:
 
 ```lua
--- mods/hello.lua
-pivot.log("hello from my first mod!")
-local form = pivot.get_main_form()
-pivot.log("main form: " .. tostring(form))
+local pivotlib = require("pivotlib")
+
+pivotlib.on_update(function()
+    pivotlib.frame_status("Lua is running")
+end)
 ```
 
-Reload Pivot via the loader and check `pivotkit.log`.
+Run Pivot through the loader and confirm that the status text changes. To log
+diagnostics, call `pivotlib.log("message")`; the output goes to
+`pivotkit.log` and to the optional console.
 
-## What you can do
+## Useful next steps
 
-- **Call published methods** on the main form and other objects:
-  ```lua
-  pivot.call(form, "SetFrameNumber", 1)
-  ```
-- **Read/write fields**:
-  ```lua
-  local play = pivot.get_field(form, "PlayButton")
-  pivot.set_field(form, "SomeField", 42)
-  ```
-- **Hook methods** (observe or override):
-  ```lua
-  pivot.hook(form, "SetNumFrames", function(self, n)
-      pivot.log("frame count set to " .. n)
-      return nil           -- nil lets the original run
-      -- return 9000       -- a number replaces the result
-  end)
-  ```
-- **Run per-frame logic**:
-  ```lua
-  pivot.on_update(function(frame)
-      if frame % 120 == 0 then pivot.log("tick " .. frame) end
-  end)
+- Use [`pivotlib`](PIVOTLIB.md) for normal mod work.
+- Use the [raw API](MOD_API.md) when you need pointers, typed fields, hooks, or
+  runtime reflection.
+- Run the examples in `mods/` and inspect the tests in `tests/`.
+- Use [`pivotctl.py`](../tools/pivotctl.py) with `-console` or the bridge for
+  one-line commands:
+
+  ```text
+  python tools\pivotctl.py "pivotlib.frame()"
   ```
 
-See `docs/MOD_API.md` for the full API reference, and `docs/BUILDING.md` if you
-want to compile from source.
+## Troubleshooting
 
-## FAQ
+**Nothing happens.** Confirm that `pivotkit.dll`, `pivotkit-loader.exe`, and
+`pivotkit\mods\00_pivotlib.lua` are beside the correct `pivot.exe`. Then read
+`pivotkit.log` for `RTTI init failed`, `mainForm`, or mod errors.
 
-**Why does nothing happen?**
-- Check `pivotkit.log` next to `pivot.exe` for errors.
-- Make sure you ran `pivotkit-loader.exe`, not `pivot.exe`.
+**A mod reports a missing function.** Update the release files together. A
+newer `pivotlib` file cannot add functions to an older injected DLL.
 
-**My mod errored.**
-Every mod is loaded independently — a crash or error in one mod is reported in
-the log and does not stop the others.
+**Pivot crashes.** Remove the newest mod, restore the `.piv` backup if needed,
+and verify that the executable is exactly version 5.2.11 32-bit. Avoid private
+offsets until you have confirmed them with `pivotlib.probe` and `pivotlib.pin`.
 
-**Will this work on Pivot 4 / 6 / 64-bit?**
-No. It targets 32-bit Pivot Animator 5.2.11 specifically. The RTTI layout
-offsets are version-pinned.
-
-**Is this official?**
-No. It is an independent community project, unaffiliated with Motusoft / Peter
-Bone / Pivot Animator.
+**Will another Pivot version work?** No compatibility is promised. The native
+RTTI layout and method addresses are tied to 5.2.11.

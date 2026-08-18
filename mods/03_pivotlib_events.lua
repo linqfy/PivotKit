@@ -1,9 +1,4 @@
--- 03_pivotlib_events.lua - input events + bridge/console demo.
---
--- Click inside Pivot's window to increment a counter shown in the HUD.
--- (Input events are polling-based — no inline hooks on Pivot's FMX methods.)
---   * F2 toggles the HUD
---   * `clicks` command works from the console or `python tools/pivotctl.py "clicks"`
+-- Demonstrate polled input events and bridge/console commands.
 
 local pivotlib = require("pivotlib")
 

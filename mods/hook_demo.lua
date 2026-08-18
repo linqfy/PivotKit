@@ -1,18 +1,14 @@
--- hook_demo.lua - shows how to observe and override methods.
---
--- pivot.hook(obj, "MethodName", fn) intercepts the published method.
---   * return nil      -> the original method still runs (observe)
---   * return a number -> that value is returned instead (override)
+-- Demonstrate observing and overriding published methods.
 
 local form = pivot.get_main_form()
 
--- Observe: log every time the app changes the frame count.
+-- Observe without overriding.
 pivot.hook(form, "SetNumFrames", function(self, n)
     pivot.log("[observe] SetNumFrames(" .. tostring(n) .. ")")
     return nil
 end)
 
--- Override: force a constant return value.
+-- Override the return value.
 pivot.hook(form, "GetFrameTween", function(self)
     pivot.log("[override] GetFrameTween -> 9000")
     return 9000

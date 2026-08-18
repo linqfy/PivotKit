@@ -1,57 +1,73 @@
-# Building from Source
+# Building from source
 
 ## Requirements
 
 - Windows
-- Visual Studio 2022 with the **"Desktop development with C++"** workload
-  (this provides the x86 MSVC toolchain)
-- Lua is vendored under `lua/` — no download needed
+- Visual Studio 2022 with the **Desktop development with C++** workload
+- The x86 MSVC toolchain provided by that workload
+- Python 3 with `pefile` only if you regenerate the RTTI reference
 
-## Build
+Lua 5.4.8 is vendored under `lua/`; the native build does not download it.
 
-```
+## Build the native binaries
+
+Run this from the repository root:
+
+```text
 build.bat
 ```
 
-The script locates Visual Studio via `vswhere` (or the `VSINSTALLDIR`
-environment variable), loads the **x86** environment, compiles Lua into a static
-lib, then builds:
+The script locates Visual Studio through `VSINSTALLDIR`, known installation
+paths, or `vswhere`, then loads the x86 environment. It produces:
 
-- `bin\pivotkit.dll` — the injected host DLL
-- `bin\pivotkit-loader.exe` — the launcher/injector
+- `bin\pivotkit.dll` — injected host DLL
+- `bin\pivotkit-loader.exe` — launcher and injector
+- `bin\lua54.lib` — static Lua library used by the host and test runner
 
-Both are 32-bit (PE machine type 0x14C), matching 32-bit `pivot.exe`.
+All three executables are built for x86 to match Pivot 5.2.11.
 
-## Layout
+## Run the Lua tests
 
-```
-pivotkit/
-├── build.bat          # MSVC x86 build
-├── src/
-│   ├── pivotkit.c     # host DLL: RTTI bridge, hooks, Lua embed
-│   └── injector.c     # loader: launches pivot.exe suspended + injects
-├── lua/               # Lua 5.4.8 source (vendored)
-├── mods/              # sample mods (copied into pivotkit/mods/ at runtime)
-├── tools/dump_rtti.py # dumps published methods/fields from pivot.exe
-└── docs/              # these guides
+Build the standalone interpreter once:
+
+```text
+tools\make_lua_test.cmd
 ```
 
-## How it works (briefly)
+Then run both suites:
 
-Pivot Animator 5.2.11 is a 32-bit **Delphi 11 / FireMonkey** app with intact
-published RTTI. `pivotkit.dll`:
+```text
+bin\lua.exe tests\pivotlib_test.lua
+bin\lua.exe tests\demo_smoke.lua
+```
 
-1. Finds `TMainForm` at runtime by heap-scanning for its VMT.
-2. Walks Delphi **published method / field tables** so mods can call or read
-   anything by name.
-3. Hooks `PeekMessageW` (IAT) for a per-frame Lua tick.
-4. Supports inline method hooks (`E9` detour + trampoline) for behavior changes.
+These tests use `tests\mock_pivot.lua`; they do not start Pivot and do not
+exercise live process injection.
 
-Version anchors live at the top of `src/pivotkit.c`. They were pinned against
-5.2.11; other builds will need re-derivation.
+## Regenerate the RTTI reference
+
+The generated files in `docs\reference\` describe the published RTTI found in
+the supported `pivot.exe`. Install `pefile`, then run:
+
+```text
+python tools\dump_rtti.py path\to\pivot.exe --json --markdown --all-classes
+```
+
+The generator writes `catalog.json`, `CATALOG.md`, `classes.json`, and
+`CLASSES.md` under `docs\reference\`. Do not hand-edit those files.
+
+## Runtime boundaries
+
+`src\pivotkit.cpp` contains the injected DLL. It discovers Pivot's published
+RTTI, exposes the `pivot` Lua table, and schedules work on Pivot's main thread.
+`src\injector.c` starts `pivot.exe` suspended and loads the DLL before resume.
+
+The version anchors near the top of `src\pivotkit.cpp` are tied to Pivot
+5.2.11 and Delphi 11. Supporting another build requires re-deriving those
+anchors and validating the complete runtime surface.
 
 ## CI
 
-`.github/workflows/build.yml` builds on `windows-latest`, verifies the artifacts
-(32-bit), and — on `v*` tags — auto-publishes a GitHub Release (pre-release /
-BETA) containing the DLL, loader, sample mods, and docs.
+`.github/workflows/build.yml` builds with MSVC x86, checks the PE architecture,
+runs both Lua suites, uploads the binaries, and publishes a prerelease when a
+`v*` tag is pushed. See [RELEASING.md](RELEASING.md) before creating a tag.

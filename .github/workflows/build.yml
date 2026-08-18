@@ -51,6 +51,16 @@ jobs:
 
           Write-Host "Artifacts OK (x86 loader, dll present)"
 
+      - name: Build Lua test runner
+        shell: cmd
+        run: tools\make_lua_test.cmd
+
+      - name: Run Lua tests
+        shell: cmd
+        run: |
+          bin\lua.exe tests\pivotlib_test.lua
+          bin\lua.exe tests\demo_smoke.lua
+
       - name: Smoke test (syntax only)
         shell: pwsh
         run: |
@@ -76,7 +86,8 @@ jobs:
           path: |
             bin/pivotkit.dll
             bin/pivotkit-loader.exe
-            mods/*.lua
+            mods/*
+            tools/pivotctl.py
           if-no-files-found: error
 
   publish:
@@ -88,6 +99,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify release metadata
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            Write-Error "Release tags must use vMAJOR.MINOR.PATCH: $tag"
+            exit 1
+          }
+
+          $version = $tag.Substring(1)
+          $heading = "^## \[$([regex]::Escape($version))\]"
+          if (-not (Select-String -Path CHANGELOG.md -Pattern $heading -Quiet)) {
+            Write-Error "CHANGELOG.md has no heading for $tag"
+            exit 1
+          }
+
+          Write-Host "Release metadata OK for $tag"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -97,11 +126,14 @@ jobs:
       - name: Assemble release payload
         shell: bash
         run: |
-          mkdir -p release_payload/pivotkit/mods
+          mkdir -p release_payload/pivotkit/mods release_payload/tools
           cp release/bin/pivotkit.dll release_payload/pivotkit.dll
           cp release/bin/pivotkit-loader.exe release_payload/pivotkit-loader.exe
-          cp release/mods/*.lua release_payload/pivotkit/mods/
+          cp release/mods/* release_payload/pivotkit/mods/
+          cp release/tools/pivotctl.py release_payload/tools/pivotctl.py
           cp README.md release_payload/README.md
+          cp CHANGELOG.md release_payload/CHANGELOG.md
+          cp LICENSE release_payload/LICENSE
           cp -r docs release_payload/docs
           cd release_payload && zip -r ../pivotkit-${GITHUB_REF_NAME}.zip .
 
@@ -109,24 +141,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "pivotkit ${{ github.ref_name }} — HEAVY BETA"
+          name: "PivotKit ${{ github.ref_name }}"
           body: |
-            ## ⚠️ HEAVY BETA
+            PivotKit ${{ github.ref_name }} is an experimental mod loader for
+            Pivot Animator 5.2.11 (32-bit).
 
-            This project is in **heavy beta**. It is a code-injection mod loader for
-            Pivot Animator 5.2.11 (32-bit). Things may break, crash pivot.exe, or
-            corrupt your `.piv` files — use at your own risk on a backup of your work.
+            This is a prerelease. It can crash Pivot or damage unsaved work, so
+            use it with a backup of your `.piv` files.
 
-            - Targets: **32-bit pivot.exe v5.2.11 only**
-            - Requires: Visual Studio 2022 to build from source (prebuilt binaries included)
-            - Not affiliated with Motusoft / Peter Bone / Pivot Animator.
+            Supported environment:
+            - 32-bit `pivot.exe` version 5.2.11
+            - Windows
+            - Not affiliated with Motusoft, Peter Bone, or Pivot Animator
 
-            **Install:** copy `pivotkit.dll` + `pivotkit-loader.exe` next to
-            `pivot.exe`, put mods in `pivotkit/mods/`, run `pivotkit-loader.exe`.
-            See `docs/GETTING_STARTED.md`.
+            Installation:
+            1. Copy `pivotkit.dll` and `pivotkit-loader.exe` next to `pivot.exe`.
+            2. Put mods in `pivotkit/mods/`.
+            3. Run `pivotkit-loader.exe`.
 
-            **Changes in this release:**
-            - See the CHANGELOG / git log.
+            The archive includes the changelog and the full documentation. See
+            `docs/GETTING_STARTED.md` for the first setup and `CHANGELOG.md` for
+            the changes in this release.
           files: |
             pivotkit-*.zip
           prerelease: true

@@ -1,13 +1,9 @@
-/*
- * pivotkit-loader.exe - starts pivot.exe, injects pivotkit.dll, resumes.
- *
- * Pivot Animator is 32-bit (Delphi 11 / FireMonkey). We launch it suspended
- * so the mod DLL is in place before any of the app's code runs.
- */
+/* Start Pivot suspended, inject pivotkit.dll, then resume the process. */
 #define _WIN32_WINNT 0x0601
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
+#include <string.h>
 
 static void die(const char* msg)
 {
@@ -54,11 +50,10 @@ int main(int argc, char** argv)
     }
     strncpy(pivotDir, pivotPath, MAX_PATH);
 
-    /* Everything lives next to the loader by default. */
     snprintf(pivotPath, MAX_PATH, "%s\\pivot.exe", pivotDir);
     snprintf(dllPath, MAX_PATH, "%s\\pivotkit.dll", pivotDir);
 
-    /* Optional argv[1] = explicit path to pivot.exe. */
+    /* argv[1] may override the default Pivot path. */
     if (argc >= 2 && strstr(argv[1], ".exe")) {
         snprintf(pivotPath, MAX_PATH, "%s", argv[1]);
         {
@@ -69,7 +64,6 @@ int main(int argc, char** argv)
         snprintf(pivotPath, MAX_PATH, "%s", argv[1]);
     }
 
-    /* `-console` shows the pivotkit console window (BepInEx-style). */
     for (int i = 1; i < argc; i++) {
         if (_stricmp(argv[i], "-console") == 0) {
             SetEnvironmentVariableA("PIVOTKIT_CONSOLE", "1");

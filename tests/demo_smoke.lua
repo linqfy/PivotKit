@@ -1,6 +1,4 @@
--- demo_smoke.lua - loads pivotlib + the demo mod against the mock and steps
--- a few frames, to prove the demo mod runs without a live Pivot.
--- Run: bin\lua.exe tests\demo_smoke.lua
+-- Smoke-test the shipped mods with the mock API.
 
 local mock = dofile("tests/mock_pivot.lua")
 _G.pivot = mock
@@ -24,25 +22,27 @@ for _, l in ipairs({ frameStatus, figureStatus, zoomLabel }) do
     })
 end
 
-dofile("mods/00_pivotlib.lua")
+local pivotlib = dofile("mods/00_pivotlib.lua")
 dofile("mods/01_pivotlib_demo.lua")
 dofile("mods/02_pivotlib_hud.lua")
 dofile("mods/03_pivotlib_events.lua")
 
--- toggle the HUD on via the F1 binding, then step a frame
+-- Toggle the HUD through the normal polled key path.
 mock.keys[0x70] = true      -- F1
 mock.update(1)
 mock.keys[0x70] = false
 mock.update(2)
 print("HUD toggle draws overlay prims: " .. tostring(#mock.overlay.items > 0))
 
--- fire a canvas mouse-down; the events demo increments its click counter
-local xbits = select(1, string.unpack("<i4", string.pack("<f", 40.0)))
-local ybits = select(1, string.unpack("<i4", string.pack("<f", 25.0)))
-mock.fire(form, "EditPaintBoxMouseDown", 0, 0, 0, xbits, ybits)
+-- Simulate one polled left-click in window-relative coordinates.
+mock.cursor.x, mock.cursor.y = 40, 25
+mock.keys[0x01] = true
 mock.update(3)
+mock.keys[0x01] = false
+mock.update(4)
+assert(pivotlib.console_exec("clicks") == "click count: 1")
 
-for i = 4, 65 do mock.update(i) end
+for i = 5, 65 do mock.update(i) end
 
 print("--- pivotkit.log ---")
 for _, line in ipairs(mock.logs) do print(line) end

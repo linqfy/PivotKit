@@ -191,7 +191,7 @@ end
 ```
 
 > `TFigure`/frame classes expose **no published fields** (0/0 in
-> `docs/CLASSES.md`), so `pos()`/`angle()` need private offsets. Start with
+> `reference/CLASSES.md`), so `pos()`/`angle()` need private offsets. Start with
 > `pivotlib.probe("TFigure")` at runtime to dump instance memory and pin them.
 
 ### Canvas overlay (HUD)
@@ -254,5 +254,5 @@ local f = pivotlib.main()
 for _, name in ipairs(f.Methods) do pivotlib.log(name) end
 ```
 
-See [CATALOG.md](CATALOG.md) for the full reference, and the raw API in
+See [CATALOG.md](reference/CATALOG.md) for the full reference, and the raw API in
 [MOD_API.md](MOD_API.md).

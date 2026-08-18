@@ -1,8 +1,4 @@
--- statusbar.lua - reads TMainForm's published component fields.
---
--- TMainForm exposes ~146 published fields: the FMX controls on the form
--- (buttons, menus, status bar, dialogs, ...). pivot.get_field returns the
--- object pointer as an integer.
+-- Read TMainForm's published component fields.
 
 local form = pivot.get_main_form()
 

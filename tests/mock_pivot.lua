@@ -1,13 +1,5 @@
--- mock_pivot.lua - simulated pivot.* API for testing pivotlib without pivot.exe
---
--- Objects are integers (addresses). `pivot.ptr` is identity, `is_object` checks
--- the registry. State (fields, methods, call history) lives in `mock.objects`.
---
--- USAGE in tests:
---   local mock = dofile("tests/mock_pivot.lua")
---   _G.pivot = mock
---   ... build objects, publish methods ...
---   local pivotlib = dofile("mods/00_pivotlib.lua")
+-- Mock pivot.* for testing pivotlib without pivot.exe.
+-- Objects are integer addresses; state lives in mock.objects.
 
 local M = {}
 
@@ -57,7 +49,7 @@ function M.history(addr)
     return M.objects[addr].history
 end
 
--- ------------------------------------------------------------ API surface
+-- API surface.
 function M.ptr(v) return v end            -- identity: mock objects are ints
 function M.address(v) return v end
 
@@ -233,7 +225,7 @@ function M.hook(obj, method, fn)
     return true
 end
 
--- Fire a previously-registered hook as the C stub would: fn(self, args...).
+-- Invoke a registered hook with the C callback shape.
 function M.fire(obj, method, ...)
     local h = M.hooks_by_method[obj] and M.hooks_by_method[obj][method]
     if not h then error("mock fire: no hook for " .. tostring(method)) end
@@ -255,7 +247,7 @@ function M.reload(modname)
     return true
 end
 
--- overlay surface (records primitives)
+-- Record overlay primitives.
 local function ov(prim)
     if prim then M.overlay.items[#M.overlay.items + 1] = prim end
     return true

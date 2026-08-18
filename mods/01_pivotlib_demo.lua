@@ -1,5 +1,4 @@
--- 01_pivotlib_demo.lua - showcases the pivotlib abstraction layer.
--- Loaded after 00_pivotlib.lua. Watch the status bar when Pivot runs.
+-- Demonstrate the pivotlib abstraction layer.
 
 local pivotlib = require("pivotlib")
 
@@ -15,11 +14,11 @@ pivotlib.log("demo: main form is " .. tostring(form))
 pivotlib.log(string.format("demo: %d methods, %d fields (from runtime RTTI)",
                            #form.Methods, #form.Fields))
 
--- write status / labels so you can see the abstraction working
+-- Update visible controls.
 pivotlib.figure_status("pivotlib demo running")
 pivotlib.set_text(form.ZoomLabel, "pivotlib!")
 
--- every second, show the parsed frame number in the status bar
+-- Refresh the frame status once per second.
 pivotlib.every(1000, function()
     pivotlib.frame_status(string.format("frame %s of %s",
         tostring(pivotlib.frame()), tostring(pivotlib.num_frames())))

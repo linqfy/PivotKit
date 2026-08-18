@@ -307,4 +307,4 @@ pivot.sprite_bounce(logo, true)
 For most mods, prefer `pivotlib` — the Lua library in
 [PIVOTLIB.md](PIVOTLIB.md) — which wraps this raw API with proxy objects and
 semantic helpers, and auto-covers the full published catalog
-([CATALOG.md](CATALOG.md)).
+([CATALOG.md](reference/CATALOG.md)).

@@ -1,5 +1,4 @@
--- hello.lua - the classic smoke test.
--- If this runs, the loader is alive and the TMainForm instance was found.
+-- Minimal loader smoke test.
 
 pivot.log("Hello from a Lua mod!")
 local form = pivot.get_main_form()

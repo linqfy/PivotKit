@@ -1,13 +1,4 @@
-/*
- * pivotkit.dll - Lua mod loader for Pivot Animator 5.2.11 (32-bit, Delphi 11 / FMX)
- *
- * Injected by pivotkit-loader.exe. On load it:
- *   1. Locates the TMainForm instance at runtime via Delphi published RTTI.
- *   2. Hooks the Win32 message loop for a per-frame tick.
- *   3. Embeds Lua 5.4 and runs every .lua file in the pivotkit/mods/ folder.
- *
- * Exposed as the Lua module `pivot` — see docs/MOD_API.md.
- */
+/* Injected host for Pivot 5.2.11; exposes the low-level pivot Lua API. */
 
 #define _WIN32_WINNT 0x0601
 #define WIN32_LEAN_AND_MEAN
@@ -16,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 #pragma comment(lib, "ws2_32.lib")
 
 extern "C" {
@@ -29,8 +21,7 @@ extern "C" {
 #pragma comment(lib, "gdiplus.lib")
 using namespace Gdiplus;
 
-/* Version anchors (pivot.exe 5.2.11, ImageBase 0x400000). The VMT layout
- * offsets are Delphi-11 specific and were pinned empirically. */
+/* These Delphi 11 layout anchors are specific to Pivot 5.2.11. */
 #define IMAGEBASE           0x400000
 #define VMT_OFFSET          12           /* vmt base = classType - 12      */
 #define OFF_VMT_METHODTABLE 0x34         /* method table ptr @ vmt base-52 */
@@ -49,7 +40,7 @@ static void console_process_cmds(void);
 static void bridge_process(void);
 static void console_write(const char* s);
 
-/* Log unhandled exceptions (access violations) so crashes are diagnosable. */
+/* Record the exception address before terminating the process. */
 static LONG WINAPI crash_filter(struct _EXCEPTION_POINTERS* ep)
 {
     if (g_log) {
@@ -65,8 +56,7 @@ static DWORD_PTR rebase(DWORD_PTR anchor) { return (DWORD_PTR)g_appBase + (ancho
 static uint16_t  ru16(DWORD_PTR va) { return *(uint16_t*)va; }
 static uint32_t  ru32(DWORD_PTR va) { return *(uint32_t*)va; }
 
-/* Find TypeInfo for a class by name: scans the image for the Pascal
- * shortstring (length-prefixed) preceded by the tkClass kind byte (7). */
+/* Find tkClass TypeInfo by its length-prefixed Pascal name. */
 static DWORD_PTR find_class_typeinfo(const char* name)
 {
     size_t len = strlen(name);
@@ -83,7 +73,7 @@ static DWORD_PTR find_class_typeinfo(const char* name)
     return 0;
 }
 
-/* Delphi published method table: [u16 count][{u16 size,u32 addr,shortstr name}] */
+/* Published method table: count, size/address, and a shortstring name. */
 static DWORD_PTR find_method_in_table(DWORD_PTR tableVa, const char* name)
 {
     if (!tableVa) return 0;
@@ -100,10 +90,7 @@ static DWORD_PTR find_method_in_table(DWORD_PTR tableVa, const char* name)
     return 0;
 }
 
-/* A plausible published field table: pointer inside the image and a sane
- * count. Guards the parent-chain walk against corrupt/garbage RTTI pointers
- * (TMainForm's inherited tables trail off into junk that would otherwise be
- * read as a huge entry count and hang the enumeration). */
+/* Reject invalid tables before walking inherited RTTI. */
 static int valid_field_table(DWORD_PTR ft)
 {
     DWORD_PTR base = (DWORD_PTR)g_appBase;
@@ -113,7 +100,7 @@ static int valid_field_table(DWORD_PTR ft)
     return c > 0 && c <= 4096;
 }
 
-/* Delphi published field table: [u16 count][u32 parentTable][{u32 off,u16 idx,shortstr name}] */
+/* Published field table: count, parent table, offset/index, and name. */
 static long find_field_in_table(DWORD_PTR tableVa, const char* name)
 {
     if (!tableVa) return -1;
@@ -131,8 +118,7 @@ static long find_field_in_table(DWORD_PTR tableVa, const char* name)
     return -1;
 }
 
-/* An FMX/Delphi object's first dword is its VMT (classType); the VMT base
- * that the published tables hang off is classType - 12. */
+/* An object starts with classType; its VMT base is classType - 12. */
 static DWORD_PTR obj_vmt_base(void* obj)
 {
     if (!obj) return 0;
@@ -148,7 +134,7 @@ static DWORD_PTR find_method_generic(void* obj, const char* name)
     return find_method_in_table(ru32(vb - OFF_VMT_METHODTABLE), name);
 }
 
-/* Walks the parent field-table chain too, so inherited fields resolve. */
+/* Walk parent tables so inherited fields resolve. */
 static long find_field_generic(void* obj, const char* name)
 {
     DWORD_PTR vb = obj_vmt_base(obj);
@@ -162,8 +148,7 @@ static long find_field_generic(void* obj, const char* name)
     return -1;
 }
 
-/* Best-effort class name of an object. FMX framework classes don't always
- * put the name at the same VMT slot, so try a few candidate offsets. */
+/* Read a class name from known FMX VMT slots. */
 static void obj_classname(void* obj, char* buf, size_t bufsz)
 {
     buf[0] = 0;
@@ -194,7 +179,7 @@ static void obj_classname(void* obj, char* buf, size_t bufsz)
 
 static void collect_class_instances(DWORD_PTR vmt, void** out, int max);
 
-/* Heap-scan for the first live instance of a class by its VMT pointer. */
+/* Return the first live instance with the requested VMT. */
 static void* scan_for_class_instance(DWORD_PTR vmt)
 {
     void* out = NULL;
@@ -202,8 +187,7 @@ static void* scan_for_class_instance(DWORD_PTR vmt)
     return out;
 }
 
-/* Heap-scan collecting up to `max` live instances of a class (same plausibility
- * checks as scan_for_class_instance). */
+/* Collect up to max live instances with the requested VMT. */
 static void collect_class_instances(DWORD_PTR vmt, void** out, int max)
 {
     if (!vmt || !out || max <= 0) return;
@@ -247,8 +231,7 @@ static void collect_class_instances(DWORD_PTR vmt, void** out, int max)
     }
 }
 
-/* The TMainForm anchor is found dynamically (image scan), so no hardcoded
- * TypeInfo address is needed. */
+/* Resolve TMainForm dynamically so no TypeInfo address is hardcoded. */
 static int init_rtti(void)
 {
     DWORD_PTR ti = find_class_typeinfo("TMainForm");    if (!ti) return 0;
@@ -264,9 +247,7 @@ static int init_rtti(void)
     return 0;
 }
 
-/* Heap-scan for TMainForm. The extra check on MainMenu1 (offset 0x2F8)
- * distinguishes the real form from class-reference list entries, which also
- * begin with the TMainForm VMT. */
+/* Find TMainForm and validate its MainMenu1 object at offset 0x2F8. */
 static void* scan_for_vmt_instance(void)
 {
     DWORD_PTR vmt = g_vmtBase + VMT_OFFSET;
@@ -308,8 +289,7 @@ static void* scan_for_vmt_instance(void)
                         if (isize < 0x200) isize = 0x724;
                         size_t room = size - i;
                         if (room < isize + 0x40 || i < 0x40) { i += 4; continue; }
-                        /* A real form's MainMenu1 (off 0x2F8) points to a live
-                           object whose VMT is inside the pivot.exe image. */
+                        /* MainMenu1 must point to an object in Pivot's image. */
                         DWORD_PTR mm = 0;
                         __try { mm = *(uint32_t*)((char*)cand + 0x2F8); }
                         __except(EXCEPTION_EXECUTE_HANDLER) { mm = 0; }
@@ -365,20 +345,7 @@ static void* delphi_call(void* self, void* fn, void* a1, void* a2)
     return delphi_call_n(self, fn, a1, a2, NULL, 0);
 }
 
-/* --------------------------------------------------------------------------
- * Delphi UnicodeString helpers
- *
- * A 32-bit Delphi `string` (UnicodeString) is a pointer to the first wide
- * character; 12 bytes before it sits the header:
- *   [0] u16 CodePage (1200=UTF-16)  [2] u16 ElemSize (2)
- *   [4] int RefCount               [8] int Length (chars)
- * `make_delphi_string` builds a string whose RefCount is -1, which Delphi
- * treats as a CONSTANT string (like a string literal): it will never try to
- * free it, so there is no risk of the RTL memory manager touching our
- * HeapAlloc'd block. `call_string` frees it itself after the synchronous
- * call; strings written into fields are leaked by design (the app owns them
- * for display and will never release them).
- * ------------------------------------------------------------------------ */
+/* Build a Delphi UnicodeString with a non-owning refcount for sync calls. */
 static void* make_delphi_string(const char* utf8)
 {
     if (!utf8) utf8 = "";
@@ -419,9 +386,7 @@ static void read_delphi_string(void* data, char* buf, size_t bufsz)
     } __except(EXCEPTION_EXECUTE_HANDLER) { buf[0] = 0; }
 }
 
-/* Best-effort: does `p` look like a live Delphi object (its first dword is a
- * VMT inside pivot.exe and its instance size is plausible)? Used by the Lua
- * abstraction layer to decide whether a field value is an object to wrap. */
+/* Check whether p looks like an object with a plausible VMT and size. */
 static int is_object_ptr(void* p)
 {
     if (!p || ((DWORD_PTR)p & 3)) return 0;
@@ -437,8 +402,7 @@ static int is_object_ptr(void* p)
     return isize >= 0x20 && isize <= 0x20000;
 }
 
-/* Best-effort: does `p` look like a Delphi UnicodeString (header 12 bytes
- * before the data)? Used by hooks to pass string arguments to Lua directly. */
+/* Check whether p points to a Delphi UnicodeString. */
 static int is_delphi_string(void* p)
 {
     if (!p || ((DWORD_PTR)p & 1)) return 0;
@@ -454,8 +418,7 @@ static int is_delphi_string(void* p)
     } __except(EXCEPTION_EXECUTE_HANDLER) { return 0; }
 }
 
-/* Push one hook argument: Delphi strings become Lua strings, everything else
- * becomes an integer (raw register/stack value). */
+/* Convert Delphi strings; preserve other hook values as integers. */
 static void push_hook_arg(lua_State* L, void* v)
 {
     if (is_delphi_string(v)) {
@@ -467,10 +430,7 @@ static void push_hook_arg(lua_State* L, void* v)
     }
 }
 
-/* Find the bytes cleaned by a method's epilogue (`ret N`), so an overridden
- * hook can clean the stack args just like the real method would. Scans the
- * method body for the last C3 (ret) / C2 xx xx (ret imm16) before the int3
- * padding that typically follows a compiled function. */
+/* Find stack cleanup encoded by the method's final ret instruction. */
 static int method_ret_cleanup(DWORD_PTR fn)
 {
     int best = -1;
@@ -485,19 +445,7 @@ static int method_ret_cleanup(DWORD_PTR fn)
     return best;
 }
 
-/* --------------------------------------------------------------------------
- * Method hooking (inline detour)
- *
- * A published method's entry is patched with a 5-byte `E9 rel32` jump to a
- * per-hook stub. The stub saves the register args to globals, calls a C
- * callback that runs the Lua hook, then either:
- *   - returns the Lua value (override; original is skipped), or
- *   - reloads the args and jumps into a trampoline that replays the original
- *     prologue bytes and continues at method+6.
- *
- * The trampoline copies 6 bytes (not 5) so we never split a multi-byte
- * instruction from the original prologue.
- * ------------------------------------------------------------------------ */
+/* Inline hooks use a 5-byte detour and a 6-byte trampoline. */
 
 #define MAX_HOOKS 32
 typedef struct {
@@ -664,14 +612,7 @@ static int unhook_hookidx(int hookIdx)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * Generic sprite overlays + floating menu button
- *
- * `pivot.sprite(path)` loads an image into a layered always-on-top window and
- * returns a Lua object you can move, give a velocity (px/frame), bounce off
- * the Pivot window edges, show/hide, and destroy. `pivot.add_menu_button`
- * puts a small button on the Pivot window that calls a Lua function.
- * ------------------------------------------------------------------------ */
+/* Layered sprite windows and a floating menu button. */
 
 #define MAX_SPRITES 16
 
@@ -690,9 +631,7 @@ static WNDPROC   g_btnProc = NULL;
 static int       g_btnLuaRef = LUA_NOREF;
 static ULONG_PTR g_gdiplusToken = 0;
 
-/* Find the main Pivot window: the LARGEST visible top-level window of this
- * process with a title. FMX also creates hidden/zero-size helper windows, so
- * "first visible" is unreliable — the main form is the biggest one. */
+/* Select the largest visible titled top-level window owned by Pivot. */
 struct MainWinSearch { LONG area; HWND hwnd; };
 
 static BOOL CALLBACK main_win_enum(HWND h, LPARAM l)
@@ -712,8 +651,7 @@ static BOOL CALLBACK main_win_enum(HWND h, LPARAM l)
 
 static HWND find_main_hwnd(void)
 {
-    /* Cache to keep EnumWindows off the hot path (input polling calls
-     * window_rect every frame). Re-enumerate every 2s or on invalid hwnd. */
+    /* Input polling calls this every frame; refresh the cache every 2 seconds. */
     static HWND cached = NULL;
     static DWORD lastCheck = 0;
     DWORD now = GetTickCount();
@@ -975,18 +913,7 @@ static int api_remove_menu_button(lua_State* L)
     return 0;
 }
 
-/* --------------------------------------------------------------------------
- * Canvas overlay (HUD)
- *
- * A transparent always-on-top layered window covering the Pivot window, drawn
- * with GDI+ from a small primitive list. Mods drive it every frame:
- *   pivot.overlay_begin()  -> clear the frame
- *   pivot.overlay_text(x,y,str,size,argb) / overlay_line / overlay_rect /
- *     overlay_circle
- *   pivot.overlay_commit() -> blit to screen
- * Coordinates are in Pivot-window pixels. This draws over Pivot's own canvas
- * without touching its FMX internals.
- * ------------------------------------------------------------------------ */
+/* GDI+ overlay window driven by a per-frame primitive list. */
 
 #define MAX_OVERLAY_PRIMS 512
 #define OV_TEXT 1
@@ -1278,9 +1205,7 @@ static BOOL WINAPI HookedPeekMessageW(LPMSG lpMsg, HWND hWnd, UINT wMin,
 
     LONG frame = InterlockedIncrement(&g_frame);
 
-    /* Load mods once, a few frames after startup so the FMX form (and its
-       fields) are fully built. Runs on the main thread, so mod code may call
-       Delphi methods safely. */
+    /* Delay loading until the FMX form is built; this runs on the main thread. */
     if (g_pendingLoad) {
         if (g_loadFrameDelay > 0) {
             g_loadFrameDelay--;
@@ -1359,18 +1284,7 @@ static int hook_peek_message(void)
     return 0;
 }
 
-/* --------------------------------------------------------------------------
- * Console (BepInEx-style) + TCP bridge
- *
- * Console: a real Windows console window ("pivotkit console") that receives
- * all pivot.log output and lets you type Lua / pivotlib commands. Enabled by
- * the -console loader flag (PIVOTKIT_CONSOLE env) or at runtime via
- * pivot.console(true). Commands run on the main thread (Delphi-safe).
- *
- * Bridge: a loopback TCP server on 127.0.0.1:50077 (enabled by default) that
- * accepts one text command per connection, runs it on the main thread, and
- * replies with the result — this is what tools/pivotctl.py talks to.
- * ------------------------------------------------------------------------ */
+/* Main-thread console and loopback bridge. */
 
 #define MAX_CMD_LINE 512
 #define MAX_CMD_QUEUE 256
@@ -1437,9 +1351,7 @@ static DWORD WINAPI console_input_thread(LPVOID param)
     return 0;
 }
 
-/* Execute one command string. Prefers the Lua-side __pivot_console__ handler
- * (installed by pivotlib) so bare command names work; falls back to a raw
- * dofile-style eval. Writes any result/error into `out`. */
+/* Execute through pivotlib, falling back to raw Lua evaluation. */
 static void run_lua_command(const char* cmd, char* out, size_t outsz)
 {
     out[0] = 0;
@@ -1496,9 +1408,7 @@ static int api_console(lua_State* L)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * TCP bridge
- * ------------------------------------------------------------------------ */
+/* TCP bridge. */
 
 #define BRIDGE_PORT 50077
 #define MAX_BRIDGE_REQS 64
@@ -1541,10 +1451,7 @@ static DWORD WINAPI bridge_conn_thread(LPVOID sockp)
             if (WaitForSingleObject(r->done, 8000) == WAIT_OBJECT_0) {
                 send(s, r->result, (int)strlen(r->result), 0);
             }
-            /* Deliberately leak r (never free / never close the event): the main
-             * thread may still be processing it. A couple hundred bytes per
-             * command is nothing for a dev tool, and it removes the
-             * use-after-free race that was crashing pivot.exe. */
+            /* Keep r allocated until the waiter returns; this avoids a race. */
         }
     }
     closesocket(s);
@@ -1598,10 +1505,7 @@ static void bridge_process(void)
     }
 }
 
-/* --------------------------------------------------------------------------
- * Raw peek: read a typed value at (obj + offset) — for pinning private field
- * offsets of classes like TFigure that expose no published members.
- * ------------------------------------------------------------------------ */
+/* Read a typed value at obj + offset for private-field discovery. */
 
 static int api_peek(lua_State* L)
 {
@@ -1643,9 +1547,7 @@ static int api_peek(lua_State* L)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * Lua API
- * ------------------------------------------------------------------------ */
+/* Lua API. */
 
 static int api_log(lua_State* L)
 {
@@ -1731,9 +1633,7 @@ static int api_get_field(lua_State* L)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * Object & pointer bridging
- * ------------------------------------------------------------------------ */
+/* Object and pointer bridging. */
 
 static int api_ptr(lua_State* L)
 {
@@ -1782,9 +1682,7 @@ static int api_get_ptr_field(lua_State* L)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * Runtime introspection: list published methods / fields by name
- * ------------------------------------------------------------------------ */
+/* Runtime introspection: list published methods and fields by name. */
 
 static int api_enum_methods(lua_State* L)
 {
@@ -1837,9 +1735,7 @@ static int api_enum_fields(lua_State* L)
     return 1;
 }
 
-/* --------------------------------------------------------------------------
- * Typed field accessors (string / float / double / bool)
- * ------------------------------------------------------------------------ */
+/* Typed field accessors for string, float, double, and bool values. */
 
 static int api_get_string_field(lua_State* L)
 {
@@ -1961,13 +1857,7 @@ static int api_set_bool_field(lua_State* L)
     return 0;
 }
 
-/* --------------------------------------------------------------------------
- * String-aware method calls
- *
- * `call_string` passes a temporary Delphi string as arg1 (EDX) and frees it
- * after the (assumed synchronous) call. `call_string_ret` calls a method whose
- * *result* is a Delphi string pointer in EAX and converts it to a Lua string.
- * ------------------------------------------------------------------------ */
+/* String calls pass temporary Delphi strings and convert string returns. */
 
 static int api_call_string(lua_State* L)
 {
@@ -2162,9 +2052,7 @@ static int api_find_instances(lua_State* L)
     return 1;
 }
 
-/* Enumerate every class found in the image (tkClass TypeInfo records whose VMT
- * class-name matches), returning their names as an array. Used to discover
- * classes beyond TMainForm (figures, frames, ...). */
+/* Enumerate validated tkClass TypeInfo names in the Pivot image. */
 static int api_enum_classes(lua_State* L)
 {
     (void)L;
@@ -2205,8 +2093,7 @@ static int api_enum_classes(lua_State* L)
     return 1;
 }
 
-/* Reload mods: all of them, or a single one by base name (`reload("foo")` loads
- * foo.lua). Hooks are NOT cleared here; pivotlib.unhook_all() handles that. */
+/* Reload all mods or one base name; pivotlib owns hook cleanup. */
 static int api_reload_mods(lua_State* L)
 {
     if (g_modDir[0] == 0) {
@@ -2320,28 +2207,45 @@ static int api_unhook(lua_State* L)
     return 1;
 }
 
-/* Load every *.lua in the mods directory. */
+/* Load Lua mods by filename so numeric prefixes define startup order. */
+#define MAX_MOD_FILES 256
+
+static int compare_mod_names(const void* left, const void* right)
+{
+    return _stricmp((const char*)left, (const char*)right);
+}
+
 static void load_mods(const char* modDir)
 {
     char pattern[MAX_PATH];
     _snprintf(pattern, sizeof(pattern), "%s\\*.lua", modDir);
+    char names[MAX_MOD_FILES][MAX_PATH];
+    int count = 0;
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
     if (h == INVALID_HANDLE_VALUE) return;
     do {
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        if (count >= MAX_MOD_FILES) continue;
+        strncpy(names[count], fd.cFileName, MAX_PATH - 1);
+        names[count][MAX_PATH - 1] = 0;
+        count++;
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+
+    qsort(names, count, sizeof(names[0]), compare_mod_names);
+    for (int i = 0; i < count; i++) {
         char path[MAX_PATH];
-        _snprintf(path, sizeof(path), "%s\\%s", modDir, fd.cFileName);
-        if (g_log) { fprintf(g_log, "pivotkit: loading mod %s\n", fd.cFileName); fflush(g_log); }
+        _snprintf(path, sizeof(path), "%s\\%s", modDir, names[i]);
+        if (g_log) { fprintf(g_log, "pivotkit: loading mod %s\n", names[i]); fflush(g_log); }
         if (luaL_dofile(g_L, path) != LUA_OK) {
             if (g_log) { fprintf(g_log, "pivotkit: mod error: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
             lua_pop(g_L, 1);
         }
-    } while (FindNextFileA(h, &fd));
-    FindClose(h);
+    }
 }
 
-/* Worker thread: resolve RTTI, find the form, set up Lua, arm the hooks. */
+/* Resolve RTTI, create Lua, and arm the message-loop hook. */
 static DWORD WINAPI loader_thread(LPVOID param)
 {
     (void)param;
@@ -2441,14 +2345,12 @@ static DWORD WINAPI loader_thread(LPVOID param)
         load_mods(g_modDir);
     }
 
-    /* Console on the -console loader flag (PIVOTKIT_CONSOLE=1). */
     {
         char env[16];
         if (GetEnvironmentVariableA("PIVOTKIT_CONSOLE", env, sizeof(env)) > 0)
             console_create();
     }
 
-    /* TCP bridge — enabled by default on 127.0.0.1. */
     if (bridge_start()) {
         if (g_log) { fprintf(g_log, "pivotkit: bridge listening on 127.0.0.1:%d\n", BRIDGE_PORT); fflush(g_log); }
         if (g_consoleOut) console_write("pivotkit bridge: 127.0.0.1:50077 (tools/pivotctl.py)\n");
@@ -2465,14 +2367,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved)
 {
     (void)reserved;
     if (reason == DLL_PROCESS_ATTACH) {
-        g_appBase = (HMODULE)GetModuleHandleW(NULL);   /* pivot.exe base, not our DLL */
+        g_appBase = (HMODULE)GetModuleHandleW(NULL);   /* Pivot image base. */
         char logPath[MAX_PATH];
         GetModuleFileNameA(hModule, logPath, MAX_PATH);
         {
             char* slash = strrchr(logPath, '\\');
             if (slash) *slash = '\0';
         }
-        strncat(logPath, "\\\pivotkit.log", sizeof(logPath) - strlen(logPath) - 1);
+        strncat(logPath, "\\pivotkit.log", sizeof(logPath) - strlen(logPath) - 1);
         g_log = fopen(logPath, "a");
         if (g_log) {
             fprintf(g_log, "\n=== pivotkit loaded ===\n");
