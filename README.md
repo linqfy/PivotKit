@@ -34,6 +34,19 @@ tasks.
 > unsaved work. Back up your `.piv` files before using it. Only `pivot.exe`
 > 5.2.11, 32-bit, is supported.
 
+> [!IMPORTANT]
+>
+> # Major Rewrite in Progress
+>
+> PivotKit is currently undergoing a **major rewrite** aimed at significantly expanding the project beyond its current Lua modding surface.
+>
+> The rewrite is focused on a cleaner and more reliable runtime, a much larger mapped Pivot API, improved native integration, better tooling for mod developers, and a stronger foundation for both Lua and more advanced mods.
+>
+> **The current release remains usable, but it should be considered legacy while this work is underway.** APIs, internals, documentation, and project structure may change substantially as the new version develops.
+>
+> Development is active. Expect large changes.
+
+
 ## Overview
 
 PivotKit runs next to Pivot as a loader and an injected DLL. The DLL embeds Lua
