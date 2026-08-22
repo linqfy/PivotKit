@@ -1,0 +1,65 @@
+# STATUS — Pivot Animator 5.2.11 RE
+
+Binary analyzed: `pivot.exe` 5.2.11, SHA-256 prefix `2c7911d3303cc28de2ac016c3f757508…`.
+Ghidra project: `PivotAnim` (investigation workspace), image base `0x400000`,
+compiler spec `borlanddelphi` (register calling convention: EAX=Self, EDX/ECX args).
+
+## Done
+
+* Full RTTI extraction: **2516 validated tkClass TypeInfos** →
+  `research/mappings/classes_full.json` (name, unit, parent, VMT VA, instance
+  size, published methods+VAs, published fields+offsets, init-table typed
+  fields, owned-class fields).
+* Delphi VMT layout for this build fully mapped `[C]` (see
+  architecture/overview.md): metadata at ClassType-88…-48, TObject's 11
+  virtuals at -44…-4 (Destroy at **-4**), init table where vmtInitTable points.
+* Init-table decoding → **private field maps** for 490 classes (2535 typed
+  fields) + owned-field (destructor-freed) info for 509 classes `[C]`
+  (validated against TFigure's destructor disassembly).
+* Ghidra: 2516 VMT labels (`RTTI_<unit>.<Class>`) + 426 published-method
+  renames applied; `TFigure.Destroy` verified at 0x93BB58.
+* Class reconstructions written up: TFigure, TFigures (see classes/).
+
+## Key addresses (quick reference)
+
+| Thing | VA | Notes |
+|-------|----|-------|
+| TObject VMT | 0x401760 | parent of everything |
+| TMainForm VMT | 0xB14D68 | instance size 0x724, unit MainUnit |
+| TMainForm TypeInfo | 0xB1AF40 | |
+| TFigure VMT | 0x93AA04 | FigureUnit, size 0x64 |
+| TFigure.Destroy | 0x93BB58 | frees fields @+0x34/+0x38 |
+| TFigures VMT | 0x946D9C | FiguresUnit, size 0x54 |
+| TFigureType VMT | 0xAF97A4 | FigureTypeUnit, size 0x3C |
+| TPlayer VMT | 0x950E74 | PlayerUnit, size 0x60 |
+| TSprite VMT | 0xAF6A94 | SpriteUnit, size 0x34 |
+| TIdxPolygon VMT | 0x92FCA4 | PolygonUnit, size 0x18 |
+| TPivotText VMT | 0x937A2C | PivotTextUnit, size 0x28 |
+| TWavePlayer VMT | 0xA9CE0C | WavePlay, size 0x44 |
+| TWinBitmap VMT | 0x9201B4 | WinBitmap, size 0x8 |
+| TThreadedTimer VMT | 0x951918 | ThreadedTimer, size 0x6C |
+| TMultiLang VMT | 0xAE4860 | MultiLanguage, size 0x18 |
+| TFigureBuilderForm VMT | 0xB02CFC | 88 published methods, 82 fields |
+
+## Open questions / next targets
+
+1. **GlobalTypes records** (`TFigVertex`, `TFigSegment`, `TCamera`,
+   `TAttachment`) — need record layouts (they have RTTI as tkRecord TypeInfos;
+   parse `record` extended RTTI or read from usage).
+2. `TMainForm` private state: where the animation frame list lives, undo stack,
+   figure type list, canvas control. 146 published fields give the component
+   tree; private fields need init-table + decompiler work (in progress).
+3. Player/playback loop; figure editing pipeline (drag handlers).
+4. File formats: `.piv` (5.x), `.stk` (3.x/4.x/5.x), export paths
+   (GIF/AVI/video via FFmpeg units + LibAV DLLs).
+5. Menu construction (FMX.Menus TMainMenu on TMainForm — published field
+   MainMenu1 @ +0x2F8 per legacy pivotkit).
+6. Virtual method slot map for FMX classes (Paint/Resize/MouseDown…) —
+   needed for clean vtable hooking of rendering & input.
+
+## Environment notes
+
+* Ghidra 12.1.2 + ghidra-mcp bridge (TCP 8089). Restart Ghidra with
+  `GHIDRA_MCP_ALLOW_SCRIPTS=1` to enable `run_script_inline` (already done in
+  this workspace). Auto-analysis finds only ~1600 functions — disassemble unit
+  code regions on demand (most Delphi code is unreferenced by flow analysis).
