@@ -3,7 +3,7 @@
 -- TMainForm+0x654 = TFrameSequence (TArray<TFigures>); TFigures = frame;
 -- TFigure = figure. Pure Lua; no C rebuild needed.
 
-local PL2 = { _VERSION = "pivotlib2 0.1 (Pivot 5.2.11)" }
+local PL2 = { _VERSION = "pivotlib 0.3.0 (Pivot 5.2.11)" }
 
 -- ---------- low-level helpers ---------------------------------------------
 
