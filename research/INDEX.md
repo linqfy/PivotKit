@@ -51,6 +51,10 @@ line says otherwise. Confidence is marked per finding:
 | Tool | Purpose |
 |------|---------|
 | `tools/dump_rtti_full.py` | Regenerate `classes_full.json` from any pivot.exe |
+| `mods/00_pivotlib2.lua` | Typed Lua API (frames/figures/camera) over the v1 runtime |
+| `mods/04_python_bridge.lua` | `pl2.python.run/spawn` — Python from Lua (GUIs via pythonw) |
+| `tools/pkpython.py` | Python-side SDK: bridge client with typed Frame/Figure refs |
+| `tools/piv_reader.py` | .piv/.stk reader (validated header parsing) |
 | `tools/gen_ghidra_tsv.py` | Emit Ghidra label/rename ops from the DB |
 | Ghidra project (investigation workspace) | `PivotAnim` project; VMT labels + method renames applied |
 

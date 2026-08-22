@@ -34,11 +34,13 @@ Maps to the runtime model: frames are `TFrameSequence` (TArray\<TFigures\>) on
 TMainForm+0x654; per-frame background/tween live in TFigures (+0x06..+0x0D);
 camera = TFigures+0x38 (TCamera: Pos TPointF, Angle double, Scale single).
 
-## .stk v5 payload (inflated) `[C]` container
+## .stk v5 payload (inflated) `[C]` container, `[H]` layout
 
-From `Figures/cow.stk` (11640 bytes inflated): starts with count/flags then
-vertex coordinate floats (93.8, …) — the TVertex/TSegment skeleton data
-(matching TFigureType's model: TVertex 12 B + TSegment 48 B records).
+From cow/dino/football/outline.stk: header begins [u16 id?][3 bytes][data];
+the payload contains DOUBLE values including -pi/2 (= 0xBFF921FB54442D18),
+matching TSegment.Angle: Double — skeleton segment data per the model.
+Inner field map still needs reader decompilation (tools/piv_reader.py
+prints raw fields meanwhile).
 
 ## Legacy .stk (v2) `[H]`
 

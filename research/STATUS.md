@@ -67,3 +67,34 @@ compiler spec `borlanddelphi` (register calling convention: EAX=Self, EDX/ECX ar
   `GHIDRA_MCP_ALLOW_SCRIPTS=1` to enable `run_script_inline` (already done in
   this workspace). Auto-analysis finds only ~1600 functions — disassemble unit
   code regions on demand (most Delphi code is unreferenced by flow analysis).
+
+## Done (session 3) — 90-100% push
+
+* **pivotlib2** (mods/00_pivotlib2.lua): typed Lua layer over the shipped v1
+  runtime using the RE offsets — Frame/Figure objects, tween/background/
+  camera read+write (RMW pokes), vertices, figure move, app calls
+  (SelectFrame/SetNumFrames/redraw). Functionally tested against mocked
+  memory: tests/pivotlib2_test.lua (ALL PASSED).
+* **Python execution** (mods/04_python_bridge.lua + tools/pkpython.py):
+  `pl2.python.run(code)` returns stdout (verified live: Python 3.13.1);
+  `spawn`/`spawn_code` run detached pythonw GUIs that drive Pivot back over
+  the bridge. pkpython.Pivot client tested against a simulated bridge
+  (tests/pkpython_test.py PASSED). Python mods can build tkinter/PySide
+  interfaces and run heavy logic outside the game tick.
+* **piv_reader.py**: .piv v5 header VALIDATED across samples (600x600 grey
+  / 640x360 sky-blue — width/height/background confirmed `[C]`).
+* **Ghidra sweep**: +902 functions discovered in app-unit ranges
+  (0x91F000-0x953000, 0xA62000-0xB16000) — total 3531 functions now
+  addressable/decompilable.
+
+### Coverage after this session
+
+| Capability | Est. | Basis |
+|---|---|---|
+| Read/write animation data via Lua | 95% | pivotlib2 tested; remaining: invalidation calls on structural edits |
+| Invoke app functionality | 60% | published methods + 3531 discovered functions; naming pass pending |
+| Hook events | 55% | published-method hooks proven; deep-hook targets identified |
+| Figure types / skeletons | 60% | full model; constructor paths pending |
+| Native UI | 30% | design + menu location; FMX construction pending; Python GUIs now available via bridge |
+| File formats read | 70% | .piv header validated; .piv body + .stk inner pending |
+| Lua+Python ergonomics | 90% | typed Lua + Python exec + bridge client, all tested |
