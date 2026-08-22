@@ -19,6 +19,12 @@ compiler spec `borlanddelphi` (register calling convention: EAX=Self, EDX/ECX ar
 * Ghidra: 2516 VMT labels (`RTTI_<unit>.<Class>`) + 426 published-method
   renames applied; `TFigure.Destroy` verified at 0x93BB58.
 * Class reconstructions written up: TFigure, TFigures (see classes/).
+* **Record harvest**: 280 tkRecord TypeInfos with full field lists — the
+  complete figure model is reconstructed (TSegment 48B with all 16 fields,
+  TVertex, TFigVertex, TFigSegment, TCamera, TAttachment) — see
+  classes/model-records.md.
+* Generated C bindings (include/pivot/pivot_5_2_11.h): 296 structs, 659+
+  offset/VA macros, class registry.
 
 ## Key addresses (quick reference)
 
@@ -43,9 +49,7 @@ compiler spec `borlanddelphi` (register calling convention: EAX=Self, EDX/ECX ar
 
 ## Open questions / next targets
 
-1. **GlobalTypes records** (`TFigVertex`, `TFigSegment`, `TCamera`,
-   `TAttachment`) — need record layouts (they have RTTI as tkRecord TypeInfos;
-   parse `record` extended RTTI or read from usage).
+
 2. `TMainForm` private state: where the animation frame list lives, undo stack,
    figure type list, canvas control. 146 published fields give the component
    tree; private fields need init-table + decompiler work (in progress).

@@ -149,6 +149,33 @@ def main():
         w(f"}} {cident(c['name'])}S;")
         w("")
 
+    w("/* ---- Record layouts (from tkRecord TypeInfos) ---- */")
+    for r in db.get("records", []):
+        nm = cident(r["name"])
+        w(f"/* {r['name']} - {r['recsize']} bytes */")
+        w(f"typedef struct {nm}S {{")
+        prev = 0
+        for f in r["fields"]:
+            off = int(f["offset"])
+            if off > prev:
+                w(f"    uint8_t _pad_{prev:X}[0x{off:X} - 0x{prev:X}];")
+            w(f"    {ctype_for(f.get('type'))} {cident(f['name'])}; /* +0x{off:X} : {f.get('type')} */")
+            t = str(f.get("type") or "")
+            size = 4
+            if "Boolean" in t:
+                size = 1
+            elif "Single" in t or "Float" in t and "Double" not in t:
+                size = 4
+            elif "Double" in t:
+                size = 8
+            elif "TPointF" in t:
+                size = 8
+            prev = off + size
+        if r["recsize"] > prev:
+            w(f"    uint8_t _tail[{r['recsize'] - prev}];")
+        w(f"}} {nm}S;")
+        w("")
+
     w("/* ---- Field offset macros (name -> offset, all mapped classes) ---- */")
     for c in app:
         for f in (c.get("typed_fields") or []) + (c.get("published_fields") or []):

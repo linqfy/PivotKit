@@ -207,6 +207,76 @@ def parse_init_table(img, class_type, inst_size):
 TYPENAME_CACHE = {}
 
 
+def parse_record_fields(img, ti_va, recsize):
+    """Parse a tkRecord TypeInfo's field list.
+
+    Format (validated on TCamera/TAttachment/TSegment in this binary):
+      [u8 kind=14][u8 len][name][u32 recSize][10 bytes prologue]
+      entries: [u32 typeVa][u32 offset][u8 0x02][u8 len][name][u8 0x02][u8 0x00]
+    Returns list of {name, offset, type_va}.
+    """
+    out = []
+    ln = img.u8(ti_va + 1)
+    base = ti_va + 2 + ln + 4  # end of recSize
+    p = None
+    for probe in range(base + 6, base + 40):
+        if img.u8(probe + 8) == 0x02:
+            l = img.u8(probe + 9)
+            if l and 1 <= l <= 64:
+                nm = img.sstr(probe + 9)
+                if nm and nm.isprintable() and len(nm) == l \
+                        and img.u8(probe + 10 + l) == 0x02:
+                    off0 = img.u32(probe + 4)
+                    if off0 is not None and off0 <= 1:
+                        p = probe
+                        break
+    if p is None:
+        return []
+    for _ in range(64):
+        tva = img.u32(p)
+        off = img.u32(p + 4)
+        if tva is None or off is None or off >= max(recsize, 1):
+            break
+        if img.u8(p + 8) != 0x02:
+            break
+        l = img.u8(p + 9)
+        if l is None or not (1 <= l <= 64):
+            break
+        nm = img.sstr(p + 9)
+        if nm is None or not nm.isprintable() or len(nm) != l:
+            break
+        if img.u8(p + 10 + l) != 0x02:
+            break
+        out.append({"name": nm, "offset": off, "type_va": tva})
+        p += 4 + 4 + 1 + 1 + l + 2
+    return out
+
+
+def scan_records(img, max_records=4000):
+    """Find tkRecord TypeInfos in the image and parse their field lists."""
+    data = img.data
+    recs = {}
+    i = 0
+    n = len(data)
+    while i < n - 8 and len(recs) < max_records:
+        if data[i] == 0x0E:
+            ln = data[i + 1]
+            if 1 <= ln <= 250 and i + 2 + ln + 4 <= n:
+                name = data[i + 2:i + 2 + ln].decode("latin1", "replace")
+                recsize = struct.unpack_from("<I", data, i + 2 + ln)[0]
+                if 0 < recsize <= 0x10000 and name.isidentifier():
+                    ti_va = img.off_to_va(i)
+                    if ti_va is not None and name not in recs:
+                        fields = parse_record_fields(img, ti_va, recsize)
+                        if fields:
+                            recs[name] = {
+                                "name": name, "recsize": recsize,
+                                "typeinfo_va": ti_va, "fields": fields,
+                            }
+        i += 1
+    return recs
+
+
 def deref_typeinfo(img, tva):
     """Type refs in init tables are PPTypeInfo (pointer to pointer).
     Deref until we land on something that looks like a TypeInfo record."""
@@ -388,12 +458,25 @@ def main():
             else:
                 f["type"] = resolve_type(img, tv)
 
+    # Record harvest: tkRecord TypeInfos with field lists
+    records = scan_records(img)
+    for r in records.values():
+        for f in r["fields"]:
+            tv = f.get("type_va")
+            if tv in ti_to_name:
+                f["type"] = ti_to_name[tv]
+            else:
+                f["type"] = resolve_type(img, tv)
+    print(f"[+] {len(records)} records with field lists")
+
     out = args.out or os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    "..", "mappings", "classes_full.json")
     out = os.path.abspath(out)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as fh:
-        json.dump({"count": len(classes), "classes": classes}, fh, indent=1)
+        json.dump({"count": len(classes), "classes": classes,
+                   "records": sorted(records.values(),
+                                     key=lambda r: r["name"].lower())}, fh, indent=1)
     print(f"[+] wrote {out}")
 
     # Summary of app-owned (non-library-unit) classes
