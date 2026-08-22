@@ -36,6 +36,9 @@ static lua_State* g_L        = NULL;
 static volatile LONG g_frame = 0;
 static FILE*      g_log      = NULL;
 
+#include "pk_core.h"
+#include "pk_api.h"
+
 static void console_process_cmds(void);
 static void bridge_process(void);
 static void console_write(const char* s);
@@ -500,10 +503,17 @@ static int hook_callback(int idx)
     }
 }
 
+static int install_hook_at(DWORD_PTR fn, int luaRef);
 static int install_hook(void* obj, const char* methodName, int luaRef)
 {
     DWORD_PTR fn = find_method_generic(obj, methodName);
     if (!fn) return 0;
+    return install_hook_at(fn, luaRef);
+}
+
+/* Install a detour on an arbitrary code address (register convention). */
+static int install_hook_at(DWORD_PTR fn, int luaRef)
+{
 
     int idx = -1;
     for (int i = 0; i < MAX_HOOKS; i++) if (!g_hooks[i].inUse) { idx = i; break; }
@@ -591,7 +601,7 @@ static int install_hook(void* obj, const char* methodName, int luaRef)
     VirtualProtect((void*)fn, 5, old, &old);
     FlushInstructionCache(GetCurrentProcess(), (void*)fn, 5);
 
-    if (g_log) { fprintf(g_log, "pivotkit: hooked %s @ %p (cleanup=%d)\n", methodName, (void*)fn, h->cleanupBytes); fflush(g_log); }
+    if (g_log) { fprintf(g_log, "pivotkit: hooked 0x%p (cleanup=%d)\n", (void*)fn, h->cleanupBytes); fflush(g_log); }
     return 1;
 }
 
@@ -2207,6 +2217,68 @@ static int api_unhook(lua_State* L)
     return 1;
 }
 
+/* Call any code address with the Delphi register convention.
+ * (self, fn_addr [, a1 [, a2 [, a3...]]]) -> EAX result. */
+static int api_call_addr(lua_State* L)
+{
+    DWORD_PTR self = (DWORD_PTR)luaL_checkinteger(L, 1);
+    DWORD_PTR fn   = (DWORD_PTR)luaL_checkinteger(L, 2);
+    int n = lua_gettop(L) - 2;
+    if (n < 0) n = 0;
+    if (n > 32) n = 32;
+    uint32_t a1 = 0, a2 = 0, more[30];
+    int nMore = 0;
+    if (n >= 1) a1 = (uint32_t)luaL_checkinteger(L, 3);
+    if (n >= 2) a2 = (uint32_t)luaL_checkinteger(L, 4);
+    for (int i = 3; i <= n; i++)
+        more[nMore++] = (uint32_t)luaL_checkinteger(L, i + 2);
+    void* r = NULL;
+    __try {
+        r = delphi_call_n((void*)self, (void*)fn, (void*)(DWORD_PTR)a1,
+                          (void*)(DWORD_PTR)a2, more, nMore);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        return luaL_error(L, "pivot.call_addr: exception calling 0x%p", (void*)fn);
+    }
+    lua_pushinteger(L, (lua_Integer)(DWORD_PTR)r);
+    return 1;
+}
+
+/* Hook any code address (not just named published methods). */
+static int api_hook_addr(lua_State* L)
+{
+    DWORD_PTR fn = (DWORD_PTR)luaL_checkinteger(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    lua_pushvalue(L, 2);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    if (!install_hook_at(fn, ref)) {
+        luaL_unref(L, LUA_REGISTRYINDEX, ref);
+        return luaL_error(L, "pivot.hook_addr: cannot hook 0x%p", (void*)fn);
+    }
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int api_unhook_addr(lua_State* L)
+{
+    DWORD_PTR fn = (DWORD_PTR)luaL_checkinteger(L, 1);
+    for (int i = 0; i < MAX_HOOKS; i++) {
+        if (g_hooks[i].inUse && g_hooks[i].method == fn) {
+            unhook_hookidx(i);
+            lua_pushboolean(L, 1);
+            return 1;
+        }
+    }
+    lua_pushboolean(L, 0);
+    return 1;
+}
+
+/* Merged-module bridge: pk_api typed accessor exposed to Lua. */
+static int api_pk_frame_count(lua_State* L)
+{
+    lua_pushinteger(L, (lua_Integer)pk_frame_count());
+    return 1;
+}
+
 /* Load Lua mods by filename so numeric prefixes define startup order. */
 #define MAX_MOD_FILES 256
 
@@ -2217,6 +2289,59 @@ static int compare_mod_names(const void* left, const void* right)
 
 static void load_mods(const char* modDir)
 {
+    /* Compiled-mod policy: load Lua BYTECODE only (mods/compiled/*.lc,
+     * built by tools/pkcompile.py). Source .lua files are skipped with
+     * a warning unless PIVOTKIT_ALLOW_SOURCE=1 is set. */
+    char compiledDir[MAX_PATH];
+    _snprintf(compiledDir, sizeof(compiledDir), "%s\\compiled", modDir);
+    if (GetFileAttributesA(compiledDir) != INVALID_FILE_ATTRIBUTES) {
+        char pattern[MAX_PATH];
+        _snprintf(pattern, sizeof(pattern), "%s\\*.lc", compiledDir);
+        char names[MAX_MOD_FILES][MAX_PATH];
+        int count = 0;
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(pattern, &fd);
+        if (h != INVALID_HANDLE_VALUE) {
+            do {
+                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+                if (count >= MAX_MOD_FILES) continue;
+                strncpy(names[count], fd.cFileName, MAX_PATH - 1);
+                names[count][MAX_PATH - 1] = 0;
+                count++;
+            } while (FindNextFileA(h, &fd));
+            FindClose(h);
+        }
+        qsort(names, count, sizeof(names[0]), compare_mod_names);
+        for (int i = 0; i < count; i++) {
+            char path[MAX_PATH];
+            _snprintf(path, sizeof(path), "%s\\%s", compiledDir, names[i]);
+            if (g_log) { fprintf(g_log, "pivotkit: loading compiled mod %s\n", names[i]); fflush(g_log); }
+            if (luaL_dofile(g_L, path) != LUA_OK) {
+                if (g_log) { fprintf(g_log, "pivotkit: mod error: %s\n", lua_tostring(g_L, -1)); fflush(g_log); }
+                lua_pop(g_L, 1);
+            }
+        }
+    }
+    char allowSource[8];
+    if (!(GetEnvironmentVariableA("PIVOTKIT_ALLOW_SOURCE", allowSource, sizeof(allowSource)) > 0)) {
+        char pattern[MAX_PATH];
+        _snprintf(pattern, sizeof(pattern), "%s\\*.lua", modDir);
+        WIN32_FIND_DATAA fd;
+        HANDLE h = FindFirstFileA(pattern, &fd);
+        if (h != INVALID_HANDLE_VALUE) {
+            do {
+                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+                char lcpath[MAX_PATH];
+                _snprintf(lcpath, sizeof(lcpath), "%s\\compiled\\%.240s", modDir, fd.cFileName);
+                char* dot = strrchr(lcpath, '.');
+                if (dot) strcpy(dot, ".lc");
+                if (GetFileAttributesA(lcpath) == INVALID_FILE_ATTRIBUTES)
+                    if (g_log) { fprintf(g_log, "pivotkit: skipping uncompiled %s (run tools/pkcompile.py)\n", fd.cFileName); fflush(g_log); }
+            } while (FindNextFileA(h, &fd));
+            FindClose(h);
+        }
+        return;
+    }
     char pattern[MAX_PATH];
     _snprintf(pattern, sizeof(pattern), "%s\\*.lua", modDir);
     char names[MAX_MOD_FILES][MAX_PATH];
@@ -2232,7 +2357,6 @@ static void load_mods(const char* modDir)
         count++;
     } while (FindNextFileA(h, &fd));
     FindClose(h);
-
     qsort(names, count, sizeof(names[0]), compare_mod_names);
     for (int i = 0; i < count; i++) {
         char path[MAX_PATH];
@@ -2259,6 +2383,7 @@ static DWORD WINAPI loader_thread(LPVOID param)
     if (g_log) fprintf(g_log, "pivotkit: mainForm=%p\n", g_mainForm);
     if (g_log) fflush(g_log);
 
+    pk_core_init((void*)g_appBase);   /* merged modules: core+rtti+hooks+api */
     g_L = luaL_newstate();
     if (!g_L) return 0;
     luaL_openlibs(g_L);
@@ -2305,6 +2430,10 @@ static DWORD WINAPI loader_thread(LPVOID param)
     lua_pushcfunction(g_L, api_sleep);         lua_setfield(g_L, -2, "sleep");
     lua_pushcfunction(g_L, api_hook);          lua_setfield(g_L, -2, "hook");
     lua_pushcfunction(g_L, api_unhook);        lua_setfield(g_L, -2, "unhook");
+    lua_pushcfunction(g_L, api_call_addr);     lua_setfield(g_L, -2, "call_addr");
+    lua_pushcfunction(g_L, api_hook_addr);     lua_setfield(g_L, -2, "hook_addr");
+    lua_pushcfunction(g_L, api_unhook_addr);   lua_setfield(g_L, -2, "unhook_addr");
+    lua_pushcfunction(g_L, api_pk_frame_count); lua_setfield(g_L, -2, "pk_frame_count");
     lua_pushcfunction(g_L, api_add_menu_button); lua_setfield(g_L, -2, "add_menu_button");
     lua_pushcfunction(g_L, api_remove_menu_button); lua_setfield(g_L, -2, "remove_menu_button");
     lua_pushcfunction(g_L, api_sprite);         lua_setfield(g_L, -2, "sprite");

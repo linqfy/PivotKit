@@ -59,6 +59,30 @@ def ctype_for(t):
     return "uint32_t"
 
 
+
+def ctype_sized(t, size):
+    """Pick a C type whose width matches the inferred field size."""
+    ts = str(t or "")
+    if "Boolean" in ts:
+        return "uint8_t"
+    if "TRectF" in ts:
+        return "PkRectF"
+    if "TRect" in ts:
+        return "PkRect"
+    if "TCamera" in ts:
+        return "PkCamera"
+    if "TAttachment" in ts:
+        return "PkAttachment"
+    if "TPointF" in ts:
+        return "PkPoint"
+    if "Double" in ts:
+        return "double"
+    if "Single" in ts or "Float" in ts:
+        return "float"
+    if "DynArray" in ts or "TArray" in ts:
+        return "PkDynArray"
+    return {1: "uint8_t", 2: "uint16_t", 8: "uint64_t"}.get(size, "uint32_t")
+
 def cident(s):
     s = re.sub(r"[^A-Za-z0-9_]", "_", s)
     if s and s[0].isdigit():
@@ -116,6 +140,8 @@ def main():
     w("")
 
     w("/* ---- Structs for classes with init-table field maps ---- */")
+    pad_i = 0
+    w("#pragma pack(push, 1)  /* offsetof must equal the RE offsets */")
     for c in app:
         tf = c.get("typed_fields") or []
         if not tf:
@@ -125,24 +151,31 @@ def main():
         w(f"typedef struct {cident(c['name'])}S {{")
         w("    uint32_t vmt; /* +0x00 */")
         prev_end = 4
-        for f in tf:
-            off = int(f["offset"])
+        offs = [int(f["offset"]) for f in tf]
+        for fi, f in enumerate(tf):
+            off = offs[fi]
+            if off < prev_end:
+                continue  # aliased view of earlier storage
             if off > prev_end:
-                w(f"    uint8_t _pad_{prev_end:X}[0x{off:X} - 0x{prev_end:X}];")
-            w(f"    {ctype_for(f.get('type'))} {cident(f['name'])};"
-              f" /* +0x{off:X} : {f.get('type')} */")
-            size = 4  # conservative; refined per-type later
+                pad_i += 1
+                w(f"    uint8_t _pad{pad_i}_{prev_end:X}[0x{off:X} - 0x{prev_end:X}];")
             t = str(f.get("type") or "")
+            base = 4
             if "Boolean" in t:
-                size = 1
-            elif "Single" in t or "Float" in t:
-                size = 4
+                base = 1
             elif "TRectF" in t or "TRect" in t:
-                size = 16
+                base = 16
             elif "TCamera" in t:
-                size = 12
+                base = 12
             elif "TAttachment" in t:
-                size = 6
+                base = 6
+            elif "Double" in t or "TPointF" in t:
+                base = 8
+            nxt = offs[fi + 1] if fi + 1 < len(offs) else (c["instance_size"] or off + base)
+            gap = nxt - off
+            size = base if gap <= 0 or gap >= base else gap
+            w(f"    {ctype_sized(t, size)} {cident(f['name'])};"
+              f" /* +0x{off:X} : {f.get('type')} */")
             prev_end = off + size
         if c["instance_size"] > prev_end:
             w(f"    uint8_t _tail[{c['instance_size'] - prev_end}];")
@@ -150,31 +183,41 @@ def main():
         w("")
 
     w("/* ---- Record layouts (from tkRecord TypeInfos) ---- */")
+    pad_i = 0
     for r in db.get("records", []):
-        nm = cident(r["name"])
+        nm = cident(r["name"]) + "Rec"
         w(f"/* {r['name']} - {r['recsize']} bytes */")
         w(f"typedef struct {nm}S {{")
         prev = 0
-        for f in r["fields"]:
-            off = int(f["offset"])
+        offs = [int(f["offset"]) for f in r["fields"]]
+        for fi, f in enumerate(r["fields"]):
+            off = offs[fi]
+            if off < prev:
+                continue  # union-style alias member (same storage, later view)
             if off > prev:
-                w(f"    uint8_t _pad_{prev:X}[0x{off:X} - 0x{prev:X}];")
-            w(f"    {ctype_for(f.get('type'))} {cident(f['name'])}; /* +0x{off:X} : {f.get('type')} */")
+                pad_i += 1
+                w(f"    uint8_t _pad{pad_i}_{prev:X}[0x{off:X} - 0x{prev:X}];")
             t = str(f.get("type") or "")
-            size = 4
+            base = 4
             if "Boolean" in t:
-                size = 1
-            elif "Single" in t or "Float" in t and "Double" not in t:
-                size = 4
+                base = 1
             elif "Double" in t:
-                size = 8
+                base = 8
             elif "TPointF" in t:
-                size = 8
+                base = 8
+            elif "Single" in t or "Float" in t:
+                base = 4
+            nxt = offs[fi + 1] if fi + 1 < len(offs) else r["recsize"]
+            gap = nxt - off
+            size = base if gap <= 0 or gap >= base else gap
+            w(f"    {ctype_sized(t, size)} {cident(f['name'])}; /* +0x{off:X} : {f.get('type')} */")
             prev = off + size
         if r["recsize"] > prev:
             w(f"    uint8_t _tail[{r['recsize'] - prev}];")
         w(f"}} {nm}S;")
         w("")
+
+    w("#pragma pack(pop)")
 
     w("/* ---- Field offset macros (name -> offset, all mapped classes) ---- */")
     for c in app:

@@ -381,7 +381,7 @@ static struct { PkTickFn fn; void *user; } g_ticks[MAX_TICKS];
 
 static BOOL WINAPI hooked_peekmessage(LPMSG m, HWND h, UINT a, UINT b, UINT r)
 {
-    BOOL res = g_orig_peekmessage(m, h, a, b, r);
+    BOOL res = g_orig_peek(m, h, a, b, r);
     LONG frame = InterlockedIncrement(&g_tick_frame);
     for (int i = 0; i < MAX_TICKS; i++)
         if (g_ticks[i].fn)

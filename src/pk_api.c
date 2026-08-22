@@ -2,6 +2,7 @@
  * Offsets are the RE-database values for 5.2.11; see include/pivot/.
  */
 #include "pk_api.h"
+#include "pk_hooks.h"
 #include <windows.h>
 #include <string.h>
 

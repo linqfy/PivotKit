@@ -67,9 +67,52 @@ end
 --       import tkinter; tkinter.Tk().mainloop()
 --   ]])
 
+-- Compiled python blocks (built by tools/pkcompile.py from --[[ @python ]]
+-- markers inside mods). Executes the COMPILED bytecode (.pyc) on the full
+-- system CPython, so any installed library (numpy, requests, PySide...) is
+-- importable. Falls back to the .py (CPython then uses its cached .pyc).
+
+local PYMODS = os.getenv("PIVOTKIT_PYMODS") or "../pymods"
+
+local function block_path(name)
+    for _, v in ipairs({ 313, 312, 311, 310, 39 }) do
+        local pyc = string.format("%s/__pycache__/%s.cpython-%d.pyc",
+                                  PYMODS, name, v)
+        local f = io.open(pyc, "rb")
+        if f then f:close() return pyc end
+    end
+    return string.format("%s/%s.py", PYMODS, name)
+end
+
+local function block(name)
+    local path = block_path(name)
+    local f = io.open(path, "rb")
+    if f then f:close()
+        local pop = io.popen(string.format('%s -X utf8 "%s" 2>&1', PYTHON, path))
+        local out = pop and pop:read("a")
+        if pop then pop:close() end
+        return out
+    end
+    return nil, "no compiled python block '" .. name .. "' under " .. PYMODS
+end
+
+local function spawn_block(name)
+    local path = block_path(name)
+    os.execute(string.format('cmd /c start "" /B %s -X utf8 "%s"',
+                             PYTHONW, path))
+    return true
+end
+
 if pivotlib2 then
     pivotlib2.python = { run = run, spawn = spawn, spawn_code = spawn_code }
 end
 
 _G.pkpython = pivotlib2 and pivotlib2.python or { run = run, spawn = spawn,
                                                   spawn_code = spawn_code }
+if pivotlib2 and pivotlib2.python then
+    pivotlib2.python.block = block
+    pivotlib2.python.spawn_block = spawn_block
+else
+    _G.pkpython.block = block
+    _G.pkpython.spawn_block = spawn_block
+end

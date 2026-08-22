@@ -84,3 +84,39 @@ assert(math.abs(v2.x - 50) < 1e-6 and math.abs(v2.y - 60) < 1e-6, "vertex read")
 g:move(1, -1)
 assert(math.abs((select(1, g:vertex(0))).x - 11) < 1e-6, "figure move")
 print("ALL PIVOTLIB2 TESTS PASSED")
+
+-- ---- UI + events test (mocked overlay/input) -----------------------------
+local drawn = {}
+pivot.window_rect = function() return 100, 200, 700, 600 end
+pivot.cursor_pos  = function() return 100 + 55, 200 + 22 end   -- inside button
+pivot.key_down    = function(vk) return _MOUSE_DOWN and 1 or 0 end
+pivot.overlay_create = function() return true end
+pivot.overlay_begin  = function() drawn = {} end
+pivot.overlay_rect   = function(x1,y1,x2,y2,a) drawn[#drawn+1] = {"rect",x1,y1,x2,y2,a} end
+pivot.overlay_text   = function(x,y,t,s,a) drawn[#drawn+1] = {"text",x,y,t,s,a} end
+pivot.overlay_commit = function() end
+pivot.on_update = nil
+
+local clicks = 0
+pl2.ui.panel("p", 0, 0, 200, 100)
+pl2.ui.label("l", 8, 6, "hello", 12)
+pl2.ui.button("b", 40, 15, 60, 25, "Go", function() clicks = clicks + 1 end)
+
+_MOUSE_DOWN = false
+pl2._tick(1)
+assert(#drawn == 4, "widget draw count: " .. #drawn)  -- panel + label + button rect + button text
+assert(clicks == 0, "no click when mouse up")
+
+_MOUSE_DOWN = true
+pl2._tick(2)
+assert(clicks == 1, "click fired on press inside button")
+pl2._tick(3)
+assert(clicks == 1, "no re-fire while held")
+
+-- tick registration
+local ticks = 0
+pl2.on_tick(function() ticks = ticks + 1 end)
+pl2._tick(4)
+assert(ticks == 1, "on_tick registered")
+
+print("PIVOTLIB2 UI/EVENT TESTS PASSED")

@@ -210,9 +210,9 @@ function PL2.app_call(method, ...)
     return pivot.call(mf, method, ...)
 end
 
-function PL2.select_frame(i)        return PL2.app_call("SelectFrame", i) end
-function PL2.set_num_frames(n)      return PL2.app_call("SetNumFrames", n) end
-function PL2.stop_playback()        return PL2.app_call("StopButtonClick") end
+function PL2.select_frame(i) return PL2.app_call("SelectFrame", i) end
+function PL2.set_num_frames(n) return PL2.app_call("SetNumFrames", n) end
+function PL2.stop_playback() return PL2.app_call("StopButtonClick") end
 
 function PL2.redraw()               -- force a frame redraw
     return PL2.app_call("DrawFrameNumber")
@@ -226,4 +226,165 @@ PL2.python = { run = function() return nil, "python bridge not loaded" end }
 
 _G.pivotlib2 = PL2
 _G.pl2 = PL2
+
+-- ---------- drawn UI widgets (over the v1 overlay canvas) -----------------
+-- A lightweight retained UI: panels, labels, buttons with hit-testing on
+-- the main window's client rect. Redrawn every tick via the overlay.
+
+local UI = { widgets = {}, next_id = 1, dirty = true }
+PL2.ui = UI
+
+function UI.clear()
+    UI.widgets = {}
+    UI.dirty = true
+end
+
+function UI.panel(id, x, y, w, h, argb)
+    UI.widgets[#UI.widgets + 1] =
+        { kind = "panel", id = id, x = x, y = y, w = w, h = h, argb = argb or 0xC0202020 }
+    UI.dirty = true
+end
+
+function UI.label(id, x, y, text, size, argb)
+    UI.widgets[#UI.widgets + 1] =
+        { kind = "label", id = id, x = x, y = y, text = tostring(text),
+          size = size or 12, argb = argb or 0xFFFFFFFF }
+    UI.dirty = true
+end
+
+function UI.button(id, x, y, w, h, text, fn, argb)
+    UI.widgets[#UI.widgets + 1] =
+        { kind = "button", id = id, x = x, y = y, w = w, h = h,
+          text = tostring(text), fn = fn, argb = argb or 0xFF3050A0,
+          state = "up" }
+    UI.dirty = true
+end
+
+local function hit(w, mx, my)
+    return mx >= w.x and mx < w.x + w.w and my >= w.y and my < w.y + w.h
+end
+
+local mouse_was_down = false
+
+function UI.tick()                       -- call from on_update
+    local wx, wy, wr, wb = pivot.window_rect()
+    local cx, cy = pivot.cursor_pos()
+    local mx, my = cx - wx, cy - wy      -- client coords
+    local down = (pivot.key_down(0x01) == true) or (pivot.key_down(0x01) == 1)
+
+    for _, w in ipairs(UI.widgets) do
+        if w.kind == "button" then
+            local h = hit(w, mx, my)
+            if down and h and not mouse_was_down and w.fn then
+                local ok, err = pcall(w.fn)
+                if not ok then pivot.log("ui button error: " .. tostring(err)) end
+            end
+        end
+    end
+    mouse_was_down = down
+
+    -- draw (cheap: every tick keeps text/positions fresh)
+    if not pivot.overlay_create then return end   -- v1 overlay not available
+    pivot.overlay_begin()
+    for _, w in ipairs(UI.widgets) do
+        if w.kind == "panel" then
+            pivot.overlay_rect(w.x, w.y, w.x + w.w, w.y + w.h, w.argb)
+        elseif w.kind == "label" then
+            pivot.overlay_text(w.x, w.y, w.text, w.size, w.argb)
+        elseif w.kind == "button" then
+            pivot.overlay_rect(w.x, w.y, w.x + w.w, w.y + w.h, w.argb)
+            pivot.overlay_text(w.x + 4, w.y + w.h / 2 - 7, w.text, 12, 0xFFFFFFFF)
+        end
+    end
+    pivot.overlay_commit()
+    UI.dirty = false
+end
+
+-- ---------- event presets (v1 published-method hooks) ----------------------
+
+local Events = {}
+PL2.events = Events
+
+local function hook_method(name, fn)
+    local mf = PL2.main_form()
+    if not mf then return false end
+    return pivot.hook(mf, name, fn) == true or pivot.hook(mf, name, fn) == 1
+end
+
+-- usage: pl2.events.on_frame_change(function(idx) ... end)
+function Events.on_frame_change(fn)
+    return hook_method("SelectFrame", function(self, idx)
+        local ok, err = pcall(fn, idx)
+        if not ok then pivot.log("frame_change error: " .. tostring(err)) end
+    end)
+end
+
+function Events.on_stop(fn)
+    return hook_method("StopButtonClick", function()
+        local ok, err = pcall(fn)
+        if not ok then pivot.log("stop error: " .. tostring(err)) end
+    end)
+end
+
+function Events.on_set_frames(fn)
+    return hook_method("SetNumFrames", function(self, n)
+        local ok, err = pcall(fn, n)
+        if not ok then pivot.log("set_frames error: " .. tostring(err)) end
+    end)
+end
+
+-- pl2.tick chain: mods register here; UI ticks automatically.
+local tick_fns = {}
+function PL2.on_tick(fn)
+    tick_fns[#tick_fns + 1] = fn
+end
+
+function PL2._tick(frame)
+    UI.tick()
+    for _, fn in ipairs(tick_fns) do
+        local ok, err = pcall(fn, frame)
+        if not ok then pivot.log("tick error: " .. tostring(err)) end
+    end
+end
+
+-- auto-install the global tick if the host exposes on_update
+if pivot.on_update then
+    pivot.on_update(function(frame)
+        local ok, err = pcall(PL2._tick, frame)
+        if not ok then pivot.log("pl2 tick: " .. tostring(err)) end
+    end)
+end
+
+
+-- ---------- raw-address calls/hooks (pivotkit.dll with call_addr support) --
+-- These reach ANY function in the binary, including the ~3500 internal
+-- functions mapped in Ghidra (see research/ + include/pivot/ bindings).
+-- Only use addresses verified for the running build.
+
+function PL2.call_addr(fn_addr, self, a1, a2, ...)
+    return pivot.call_addr(self or 0, fn_addr, a1 or 0, a2 or 0, ...)
+end
+
+function PL2.hook_addr(fn_addr, callback)
+    return pivot.hook_addr(fn_addr, callback)
+end
+
+function PL2.unhook_addr(fn_addr)
+    return pivot.unhook_addr(fn_addr)
+end
+
+-- ---------- library merge ---------------------------------------------------
+-- One library, no version split: if the legacy pivotlib (00_pivotlib.lua)
+-- loaded first, fold this API into it (legacy names win on collision, so
+-- nothing is lost). pl2/pivotlib2 remain as aliases.
+
+if _G.pivotlib and type(_G.pivotlib) == "table" then
+    for k, v in pairs(PL2) do
+        if rawget(_G.pivotlib, k) == nil then
+            rawset(_G.pivotlib, k, v)
+        end
+    end
+    _G.pivotlib.v2 = PL2
+end
+
 return PL2

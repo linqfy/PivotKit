@@ -56,20 +56,21 @@ static const PkClassInfo PkClasses[] = {
 #define PkClassCount (sizeof(PkClasses)/sizeof(PkClasses[0]))
 
 /* ---- Structs for classes with init-table field maps ---- */
+#pragma pack(push, 1)  /* offsetof must equal the RE offsets */
 /* TFigureType (FigureTypeUnit) - VMT 0xAF97A4, size 0x3C */
 typedef struct TFigureTypeS {
     uint32_t vmt; /* +0x00 */
-    uint32_t FNumSegments; /* +0x4 : Integer */
-    uint32_t FNumPolygons; /* +0x6 : Integer */
+    uint16_t FNumSegments; /* +0x4 : Integer */
+    uint16_t FNumPolygons; /* +0x6 : Integer */
     PkDynArray Vertices; /* +0x8 : TArray<TVertex> */
     PkDynArray Segments; /* +0xC : DynArray::TFigureType.:2 */
     PkDynArray SegImages; /* +0x10 : DynArray::TFigureType.:3 */
     PkDynArray Polygons; /* +0x14 : DynArray::TFigureType.:4 */
     PkDynArray Text; /* +0x18 : DynArray::TFigureType.:5 */
     PkDynArray DrawOrder; /* +0x1C : DynArray::TFigureType.:6 */
-    uint32_t Used; /* +0x20 : Integer */
+    uint16_t Used; /* +0x20 : Integer */
     uint8_t IsSingleColor; /* +0x22 : Boolean */
-    uint8_t _pad_23[0x24 - 0x23];
+    uint8_t _pad1_23[0x24 - 0x23];
     uint32_t SingleColor; /* +0x24 : Integer */
     float OutlineThickness; /* +0x28 : Float:Single */
     uint32_t OutlineColor; /* +0x2C : Integer */
@@ -90,20 +91,20 @@ typedef struct TFigureS {
     PkDynArray FigVertices; /* +0x34 : TArray<TFigVertex> */
     PkDynArray FigSegments; /* +0x38 : DynArray:TFigSegments */
     uint8_t Flipped; /* +0x3C : Boolean */
-    uint8_t _pad_3D[0x3E - 0x3D];
-    uint32_t NumSegVarLen; /* +0x3E : Integer */
-    uint32_t NumSegVarBend; /* +0x40 : Integer */
+    uint8_t _pad2_3D[0x3E - 0x3D];
+    uint16_t NumSegVarLen; /* +0x3E : Integer */
+    uint16_t NumSegVarBend; /* +0x40 : Integer */
     PkAttachment Attachment; /* +0x42 : record TAttachment */
-    uint32_t NumSegAttach; /* +0x48 : Integer */
+    uint16_t NumSegAttach; /* +0x48 : Integer */
     uint8_t CanAttach; /* +0x4A : Boolean */
-    uint8_t _pad_4B[0x4C - 0x4B];
+    uint8_t _pad3_4B[0x4C - 0x4B];
     uint32_t DrawOrderIdx; /* +0x4C : Integer */
     uint32_t Selected; /* +0x50 : Integer */
     uint8_t InSelectBox; /* +0x54 : Boolean */
     uint8_t Moved; /* +0x55 : Boolean */
-    uint8_t _pad_56[0x58 - 0x56];
+    uint8_t _pad4_56[0x58 - 0x56];
     uint32_t ID; /* +0x58 : Integer */
-    uint32_t Next; /* +0x5C : Integer */
+    uint16_t Next; /* +0x5C : Integer */
     uint32_t Prev; /* +0x5E : Integer */
     uint8_t _tail[2];
 } TFigureS;
@@ -111,20 +112,20 @@ typedef struct TFigureS {
 /* TFigures (FiguresUnit) - VMT 0x946D9C, size 0x54 */
 typedef struct TFiguresS {
     uint32_t vmt; /* +0x00 */
-    uint32_t FNumFigures; /* +0x4 : Integer */
-    uint32_t FBackground; /* +0x6 : Integer */
-    uint32_t FBackground2; /* +0x8 : Integer */
-    uint32_t FBackgroundRatio; /* +0xA : Integer */
+    uint16_t FNumFigures; /* +0x4 : Integer */
+    uint16_t FBackground; /* +0x6 : Integer */
+    uint16_t FBackground2; /* +0x8 : Integer */
+    uint16_t FBackgroundRatio; /* +0xA : Integer */
     uint32_t FFrameTween; /* +0xC : Integer */
     PkDynArray Figures; /* +0x10 : DynArray::TFigures.:1 */
     PkDynArray DrawOrder; /* +0x14 : DynArray:TArrayOfWord */
     uint8_t FrameSelected; /* +0x18 : Boolean */
     uint8_t StartedAttaching; /* +0x19 : Boolean */
-    uint8_t _pad_1A[0x1C - 0x1A];
+    uint8_t _pad5_1A[0x1C - 0x1A];
     PkDynArray EditSelected; /* +0x1C : DynArray:TArrayOfWord */
     uint32_t NumSelected; /* +0x20 : Integer */
     PkRectF SelectedRect; /* +0x24 : record TRectF */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad6_34[0x38 - 0x34];
     PkCamera Camera; /* +0x38 : record TCamera */
     uint8_t _tail[16];
 } TFiguresS;
@@ -132,7 +133,7 @@ typedef struct TFiguresS {
 /* TImageSelector (ImageSelector) - VMT 0x931818, size 0x494 */
 typedef struct TImageSelectorS {
     uint32_t vmt; /* +0x00 */
-    uint8_t _pad_4[0x450 - 0x4];
+    uint8_t _pad7_4[0x450 - 0x4];
     PkDynArray Images; /* +0x450 : DynArray::TImageSelector.:1 */
     PkDynArray Labels; /* +0x454 : DynArray::TImageSelector.:2 */
     PkDynArray Infos; /* +0x458 : TArray<string> */
@@ -144,7 +145,7 @@ typedef struct TImageSelectorS {
     uint32_t TotalHeight; /* +0x470 : Integer */
     uint32_t TotalWidth; /* +0x474 : Integer */
     uint8_t DisableDraw; /* +0x478 : Boolean */
-    uint8_t _pad_479[0x47C - 0x479];
+    uint8_t _pad8_479[0x47C - 0x479];
     uint32_t FSearch; /* +0x47C : string */
     PkDynArray Regions; /* +0x480 : DynArray::TImageSelector.:4 */
     PkRect SelectBox; /* +0x484 : class TRectangle */
@@ -177,8 +178,8 @@ typedef struct TPivotTextS {
 typedef struct TIdxPolygonS {
     uint32_t vmt; /* +0x00 */
     uint32_t FColor; /* +0x4 : Integer */
-    uint32_t FTransparency; /* +0x8 : Integer */
-    uint32_t FNumVertices; /* +0xA : Integer */
+    uint16_t FTransparency; /* +0x8 : Integer */
+    uint16_t FNumVertices; /* +0xA : Integer */
     PkDynArray VertexIdx; /* +0xC : DynArray::TIdxPolygon.:1 */
     uint32_t DrawOrderIdx; /* +0x10 : Integer */
     uint8_t _tail[4];
@@ -187,7 +188,7 @@ typedef struct TIdxPolygonS {
 /* TTrackBarLabel (TrackBarLabelUnit) - VMT 0xA6D010, size 0x444 */
 typedef struct TTrackBarLabelS {
     uint32_t vmt; /* +0x00 */
-    uint8_t _pad_4[0x428 - 0x4];
+    uint8_t _pad9_4[0x428 - 0x4];
     uint32_t FLabel; /* +0x428 : class TLabelBack */
     uint32_t FSuffix; /* +0x42C : string */
     uint32_t FTimer; /* +0x430 : class TTimer */
@@ -201,13 +202,13 @@ typedef struct TWavePlayerS {
     uint32_t vmt; /* +0x00 */
     uint32_t FQueueThread; /* +0x4 : class TQueueThread */
     uint8_t FPaused; /* +0x8 : Boolean */
-    uint8_t _pad_9[0xC - 0x9];
+    uint8_t _pad10_9[0xC - 0x9];
     uint32_t FReadBuffer; /* +0xC : TFF_AudioSpecCallback */
     uint32_t FUserData; /* +0x10 : Pointer */
     uint32_t FLastErrMsg; /* +0x14 : string */
     uint32_t FWaveHandle; /* +0x18 : Integer */
     uint32_t FWaveFormat; /* +0x1C : record tWAVEFORMATEX */
-    uint8_t _pad_20[0x30 - 0x20];
+    uint8_t _pad11_20[0x30 - 0x20];
     PkDynArray FWaveHdr; /* +0x30 : DynArray::TWavePlayer.:1 */
     PkDynArray FWaveBuf; /* +0x34 : DynArray::TWavePlayer.:2 */
     uint32_t FWaveBufSize; /* +0x38 : Integer */
@@ -217,13 +218,13 @@ typedef struct TWavePlayerS {
 
 /* ---- Record layouts (from tkRecord TypeInfos) ---- */
 /* _COMDLG_FILTERSPEC - 8 bytes */
-typedef struct _COMDLG_FILTERSPECS {
+typedef struct _COMDLG_FILTERSPECRecS {
     uint32_t pszName; /* +0x0 : PWideChar */
     uint32_t pszSpec; /* +0x4 : PWideChar */
-} _COMDLG_FILTERSPECS;
+} _COMDLG_FILTERSPECRecS;
 
 /* _D3DPRESENT_PARAMETERS_ - 56 bytes */
-typedef struct _D3DPRESENT_PARAMETERS_S {
+typedef struct _D3DPRESENT_PARAMETERS_RecS {
     uint32_t BackBufferWidth; /* +0x0 : Integer */
     uint32_t BackBufferHeight; /* +0x4 : Integer */
     uint32_t BackBufferFormat; /* +0x8 : Integer */
@@ -238,53 +239,53 @@ typedef struct _D3DPRESENT_PARAMETERS_S {
     uint32_t Flags; /* +0x2C : Integer */
     uint32_t FullScreen_RefreshRateInHz; /* +0x30 : Integer */
     uint32_t PresentationInterval; /* +0x34 : Integer */
-} _D3DPRESENT_PARAMETERS_S;
+} _D3DPRESENT_PARAMETERS_RecS;
 
 /* _D3DVERTEXELEMENT9 - 8 bytes */
-typedef struct _D3DVERTEXELEMENT9S {
-    uint32_t Stream; /* +0x0 : Integer */
-    uint32_t Offset; /* +0x2 : Integer */
-    uint32_t _Type; /* +0x4 : _D3DDECLTYPE */
-    uint32_t Method; /* +0x5 : _D3DDECLMETHOD */
-    uint32_t Usage; /* +0x6 : _D3DDECLUSAGE */
-    uint32_t UsageIndex; /* +0x7 : Integer */
-} _D3DVERTEXELEMENT9S;
+typedef struct _D3DVERTEXELEMENT9RecS {
+    uint16_t Stream; /* +0x0 : Integer */
+    uint16_t Offset; /* +0x2 : Integer */
+    uint8_t _Type; /* +0x4 : _D3DDECLTYPE */
+    uint8_t Method; /* +0x5 : _D3DDECLMETHOD */
+    uint8_t Usage; /* +0x6 : _D3DDECLUSAGE */
+    uint8_t UsageIndex; /* +0x7 : Integer */
+} _D3DVERTEXELEMENT9RecS;
 
 /* _D3DVIEWPORT9 - 24 bytes */
-typedef struct _D3DVIEWPORT9S {
+typedef struct _D3DVIEWPORT9RecS {
     uint32_t X; /* +0x0 : Integer */
     uint32_t Y; /* +0x4 : Integer */
     uint32_t Width; /* +0x8 : Integer */
     uint32_t Height; /* +0xC : Integer */
     float MinZ; /* +0x10 : Float:Single */
     float MaxZ; /* +0x14 : Float:Single */
-} _D3DVIEWPORT9S;
+} _D3DVIEWPORT9RecS;
 
 /* _devicemodeW - 220 bytes */
-typedef struct _devicemodeWS {
+typedef struct _devicemodeWRecS {
     uint32_t dmDeviceName; /* +0x0 : None */
-    uint8_t _pad_4[0x40 - 0x4];
-    uint32_t dmSpecVersion; /* +0x40 : Integer */
-    uint32_t dmDriverVersion; /* +0x42 : Integer */
-    uint32_t dmSize; /* +0x44 : Integer */
-    uint32_t dmDriverExtra; /* +0x46 : Integer */
+    uint8_t _pad1_4[0x40 - 0x4];
+    uint16_t dmSpecVersion; /* +0x40 : Integer */
+    uint16_t dmDriverVersion; /* +0x42 : Integer */
+    uint16_t dmSize; /* +0x44 : Integer */
+    uint16_t dmDriverExtra; /* +0x46 : Integer */
     uint32_t dmFields; /* +0x48 : Integer */
-    uint32_t dmOrientation; /* +0x4C : Integer */
-    uint32_t dmPaperSize; /* +0x4E : Integer */
-    uint32_t dmPaperLength; /* +0x50 : Integer */
-    uint32_t dmPaperWidth; /* +0x52 : Integer */
-    uint32_t dmScale; /* +0x54 : Integer */
-    uint32_t dmCopies; /* +0x56 : Integer */
-    uint32_t dmDefaultSource; /* +0x58 : Integer */
-    uint32_t dmPrintQuality; /* +0x5A : Integer */
-    uint32_t dmColor; /* +0x5C : Integer */
-    uint32_t dmDuplex; /* +0x5E : Integer */
-    uint32_t dmYResolution; /* +0x60 : Integer */
-    uint32_t dmTTOption; /* +0x62 : Integer */
-    uint32_t dmCollate; /* +0x64 : Integer */
+    uint16_t dmOrientation; /* +0x4C : Integer */
+    uint16_t dmPaperSize; /* +0x4E : Integer */
+    uint16_t dmPaperLength; /* +0x50 : Integer */
+    uint16_t dmPaperWidth; /* +0x52 : Integer */
+    uint16_t dmScale; /* +0x54 : Integer */
+    uint16_t dmCopies; /* +0x56 : Integer */
+    uint16_t dmDefaultSource; /* +0x58 : Integer */
+    uint16_t dmPrintQuality; /* +0x5A : Integer */
+    uint16_t dmColor; /* +0x5C : Integer */
+    uint16_t dmDuplex; /* +0x5E : Integer */
+    uint16_t dmYResolution; /* +0x60 : Integer */
+    uint16_t dmTTOption; /* +0x62 : Integer */
+    uint16_t dmCollate; /* +0x64 : Integer */
     uint32_t dmFormName; /* +0x66 : None */
-    uint8_t _pad_6A[0xA6 - 0x6A];
-    uint32_t dmLogPixels; /* +0xA6 : Integer */
+    uint8_t _pad2_6A[0xA6 - 0x6A];
+    uint16_t dmLogPixels; /* +0xA6 : Integer */
     uint32_t dmBitsPerPel; /* +0xA8 : Integer */
     uint32_t dmPelsWidth; /* +0xAC : Integer */
     uint32_t dmPelsHeight; /* +0xB0 : Integer */
@@ -298,30 +299,30 @@ typedef struct _devicemodeWS {
     uint32_t dmICCModel; /* +0xD0 : Integer */
     uint32_t dmPanningWidth; /* +0xD4 : Integer */
     uint32_t dmPanningHeight; /* +0xD8 : Integer */
-} _devicemodeWS;
+} _devicemodeWRecS;
 
 /* _FILETIME - 8 bytes */
-typedef struct _FILETIMES {
+typedef struct _FILETIMERecS {
     uint32_t dwLowDateTime; /* +0x0 : Integer */
     uint32_t dwHighDateTime; /* +0x4 : Integer */
-} _FILETIMES;
+} _FILETIMERecS;
 
 /* _LIST_ENTRY - 8 bytes */
-typedef struct _LIST_ENTRYS {
+typedef struct _LIST_ENTRYRecS {
     uint32_t Flink; /* +0x0 : PLIST_ENTRY */
     uint32_t Blink; /* +0x4 : PLIST_ENTRY */
-} _LIST_ENTRYS;
+} _LIST_ENTRYRecS;
 
 /* _MARGINS - 16 bytes */
-typedef struct _MARGINSS {
+typedef struct _MARGINSRecS {
     uint32_t cxLeftWidth; /* +0x0 : Integer */
     uint32_t cxRightWidth; /* +0x4 : Integer */
     uint32_t cyTopHeight; /* +0x8 : Integer */
     uint32_t cyBottomHeight; /* +0xC : Integer */
-} _MARGINSS;
+} _MARGINSRecS;
 
 /* _NOTIFYICONDATAW - 956 bytes */
-typedef struct _NOTIFYICONDATAWS {
+typedef struct _NOTIFYICONDATAWRecS {
     uint32_t cbSize; /* +0x0 : Integer */
     uint32_t Wnd; /* +0x4 : Integer */
     uint32_t uID; /* +0x8 : Integer */
@@ -329,148 +330,144 @@ typedef struct _NOTIFYICONDATAWS {
     uint32_t uCallbackMessage; /* +0x10 : Integer */
     uint32_t hIcon; /* +0x14 : Integer */
     uint32_t szTip; /* +0x18 : None */
-    uint8_t _pad_1C[0x118 - 0x1C];
+    uint8_t _pad3_1C[0x118 - 0x1C];
     uint32_t dwState; /* +0x118 : Integer */
     uint32_t dwStateMask; /* +0x11C : Integer */
     uint32_t szInfo; /* +0x120 : None */
-    uint8_t _pad_124[0x320 - 0x124];
+    uint8_t _pad4_124[0x320 - 0x124];
     uint32_t uTimeout; /* +0x320 : Integer */
-    uint32_t uVersion; /* +0x320 : Integer */
     uint32_t szInfoTitle; /* +0x324 : None */
-    uint8_t _pad_328[0x3A4 - 0x328];
+    uint8_t _pad5_328[0x3A4 - 0x328];
     uint32_t dwInfoFlags; /* +0x3A4 : Integer */
     uint32_t guidItem; /* +0x3A8 : record TGUID */
-    uint8_t _pad_3AC[0x3B8 - 0x3AC];
+    uint8_t _pad6_3AC[0x3B8 - 0x3AC];
     uint32_t hBalloonIcon; /* +0x3B8 : Integer */
-} _NOTIFYICONDATAWS;
+} _NOTIFYICONDATAWRecS;
 
 /* _POINTL - 8 bytes */
-typedef struct _POINTLS {
+typedef struct _POINTLRecS {
     uint32_t x; /* +0x0 : Integer */
     uint32_t y; /* +0x4 : Integer */
-} _POINTLS;
+} _POINTLRecS;
 
 /* _RTL_CRITICAL_SECTION - 24 bytes */
-typedef struct _RTL_CRITICAL_SECTIONS {
+typedef struct _RTL_CRITICAL_SECTIONRecS {
     uint32_t DebugInfo; /* +0x0 : PRTLCriticalSectionDebug */
     uint32_t LockCount; /* +0x4 : Integer */
     uint32_t RecursionCount; /* +0x8 : Integer */
     uint32_t OwningThread; /* +0xC : Integer */
     uint32_t LockSemaphore; /* +0x10 : Integer */
     uint32_t Reserved; /* +0x14 : Integer */
-} _RTL_CRITICAL_SECTIONS;
+} _RTL_CRITICAL_SECTIONRecS;
 
 /* _RTL_CRITICAL_SECTION_DEBUG - 32 bytes */
-typedef struct _RTL_CRITICAL_SECTION_DEBUGS {
-    uint32_t Type_18; /* +0x0 : Integer */
-    uint32_t CreatorBackTraceIndex; /* +0x2 : Integer */
+typedef struct _RTL_CRITICAL_SECTION_DEBUGRecS {
+    uint16_t Type_18; /* +0x0 : Integer */
+    uint16_t CreatorBackTraceIndex; /* +0x2 : Integer */
     uint32_t CriticalSection; /* +0x4 : PRTLCriticalSection */
     uint32_t ProcessLocksList; /* +0x8 : record _LIST_ENTRY */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad7_C[0x10 - 0xC];
     uint32_t EntryCount; /* +0x10 : Integer */
     uint32_t ContentionCount; /* +0x14 : Integer */
     uint32_t Spare; /* +0x18 : None */
     uint8_t _tail[4];
-} _RTL_CRITICAL_SECTION_DEBUGS;
+} _RTL_CRITICAL_SECTION_DEBUGRecS;
 
 /* _SECURITY_ATTRIBUTES - 12 bytes */
-typedef struct _SECURITY_ATTRIBUTESS {
+typedef struct _SECURITY_ATTRIBUTESRecS {
     uint32_t nLength; /* +0x0 : Integer */
     uint32_t lpSecurityDescriptor; /* +0x4 : Pointer */
     uint32_t bInheritHandle; /* +0x8 : LongBool */
-} _SECURITY_ATTRIBUTESS;
+} _SECURITY_ATTRIBUTESRecS;
 
 /* _Tdefault_val - 8 bytes */
-typedef struct _Tdefault_valS {
+typedef struct _Tdefault_valRecS {
     uint32_t i64; /* +0x0 : Int64 */
-    float dbl; /* +0x0 : Float:Double */
-    uint32_t str; /* +0x0 : PAnsiChar */
-    uint32_t q; /* +0x0 : record TAVRational */
     uint8_t _tail[4];
-} _Tdefault_valS;
+} _Tdefault_valRecS;
 
 /* _WIN32_FIND_DATAW - 592 bytes */
-typedef struct _WIN32_FIND_DATAWS {
+typedef struct _WIN32_FIND_DATAWRecS {
     uint32_t dwFileAttributes; /* +0x0 : Integer */
     uint32_t ftCreationTime; /* +0x4 : record _FILETIME */
-    uint8_t _pad_8[0xC - 0x8];
+    uint8_t _pad8_8[0xC - 0x8];
     uint32_t ftLastAccessTime; /* +0xC : record _FILETIME */
-    uint8_t _pad_10[0x14 - 0x10];
+    uint8_t _pad9_10[0x14 - 0x10];
     uint32_t ftLastWriteTime; /* +0x14 : record _FILETIME */
-    uint8_t _pad_18[0x1C - 0x18];
+    uint8_t _pad10_18[0x1C - 0x18];
     uint32_t nFileSizeHigh; /* +0x1C : Integer */
     uint32_t nFileSizeLow; /* +0x20 : Integer */
     uint32_t dwReserved0; /* +0x24 : Integer */
     uint32_t dwReserved1; /* +0x28 : Integer */
     uint32_t cFileName; /* +0x2C : None */
-    uint8_t _pad_30[0x234 - 0x30];
+    uint8_t _pad11_30[0x234 - 0x30];
     uint32_t cAlternateFileName; /* +0x234 : None */
     uint8_t _tail[24];
-} _WIN32_FIND_DATAWS;
+} _WIN32_FIND_DATAWRecS;
 
 /* BitmapData - 24 bytes */
-typedef struct BitmapDataS {
+typedef struct BitmapDataRecS {
     uint32_t Width; /* +0x0 : Integer */
     uint32_t Height; /* +0x4 : Integer */
     uint32_t Stride; /* +0x8 : Integer */
     uint32_t PixelFormat; /* +0xC : Integer */
     uint32_t Scan0; /* +0x10 : Pointer */
     uint32_t Reserved; /* +0x14 : Integer */
-} BitmapDataS;
+} BitmapDataRecS;
 
 /* ColorMap - 8 bytes */
-typedef struct ColorMapS {
+typedef struct ColorMapRecS {
     uint32_t oldColor; /* +0x0 : Integer */
     uint32_t newColor; /* +0x4 : Integer */
-} ColorMapS;
+} ColorMapRecS;
 
 /* ColorPalette - 12 bytes */
-typedef struct ColorPaletteS {
+typedef struct ColorPaletteRecS {
     uint32_t Flags; /* +0x0 : Integer */
     uint32_t Count; /* +0x4 : Integer */
     uint32_t Entries; /* +0x8 : None */
-} ColorPaletteS;
+} ColorPaletteRecS;
 
 /* D2D1_GRADIENT_STOP - 20 bytes */
-typedef struct D2D1_GRADIENT_STOPS {
+typedef struct D2D1_GRADIENT_STOPRecS {
     float position; /* +0x0 : Float:Single */
     uint32_t color; /* +0x4 : record D3DCOLORVALUE */
     uint8_t _tail[12];
-} D2D1_GRADIENT_STOPS;
+} D2D1_GRADIENT_STOPRecS;
 
 /* D2D1_LAYER_PARAMETERS - 60 bytes */
-typedef struct D2D1_LAYER_PARAMETERSS {
+typedef struct D2D1_LAYER_PARAMETERSRecS {
     uint32_t contentBounds; /* +0x0 : record D2D_RECT_F */
-    uint8_t _pad_4[0x10 - 0x4];
+    uint8_t _pad12_4[0x10 - 0x4];
     uint32_t geometricMask; /* +0x10 : ID2D1Geometry */
     uint32_t maskAntialiasMode; /* +0x14 : None */
     uint32_t maskTransform; /* +0x18 : record D2D_MATRIX_3X2_F */
-    uint8_t _pad_1C[0x30 - 0x1C];
+    uint8_t _pad13_1C[0x30 - 0x1C];
     float opacity; /* +0x30 : Float:Single */
     uint32_t opacityBrush; /* +0x34 : ID2D1Brush */
     uint32_t layerOptions; /* +0x38 : Integer */
-} D2D1_LAYER_PARAMETERSS;
+} D2D1_LAYER_PARAMETERSRecS;
 
 /* D2D_MATRIX_3X2_F - 24 bytes */
-typedef struct D2D_MATRIX_3X2_FS {
+typedef struct D2D_MATRIX_3X2_FRecS {
     float _11; /* +0x0 : Float:Single */
     float _12; /* +0x4 : Float:Single */
     float _21; /* +0x8 : Float:Single */
     float _22; /* +0xC : Float:Single */
     float _31; /* +0x10 : Float:Single */
     float _32; /* +0x14 : Float:Single */
-} D2D_MATRIX_3X2_FS;
+} D2D_MATRIX_3X2_FRecS;
 
 /* D2D_RECT_F - 16 bytes */
-typedef struct D2D_RECT_FS {
+typedef struct D2D_RECT_FRecS {
     float left; /* +0x0 : Float:Single */
     float top; /* +0x4 : Float:Single */
     float right; /* +0x8 : Float:Single */
     float bottom; /* +0xC : Float:Single */
-} D2D_RECT_FS;
+} D2D_RECT_FRecS;
 
 /* D3D11_INPUT_ELEMENT_DESC - 28 bytes */
-typedef struct D3D11_INPUT_ELEMENT_DESCS {
+typedef struct D3D11_INPUT_ELEMENT_DESCRecS {
     uint32_t SemanticName; /* +0x0 : PAnsiChar */
     uint32_t SemanticIndex; /* +0x4 : Integer */
     uint32_t Format; /* +0x8 : None */
@@ -478,28 +475,28 @@ typedef struct D3D11_INPUT_ELEMENT_DESCS {
     uint32_t AlignedByteOffset; /* +0x10 : Integer */
     uint32_t InputSlotClass; /* +0x14 : D3D11_INPUT_CLASSIFICATION */
     uint32_t InstanceDataStepRate; /* +0x18 : Integer */
-} D3D11_INPUT_ELEMENT_DESCS;
+} D3D11_INPUT_ELEMENT_DESCRecS;
 
 /* D3D11_VIEWPORT - 24 bytes */
-typedef struct D3D11_VIEWPORTS {
+typedef struct D3D11_VIEWPORTRecS {
     float TopLeftX; /* +0x0 : Float:Single */
     float TopLeftY; /* +0x4 : Float:Single */
     float Width; /* +0x8 : Float:Single */
     float Height; /* +0xC : Float:Single */
     float MinDepth; /* +0x10 : Float:Single */
     float MaxDepth; /* +0x14 : Float:Single */
-} D3D11_VIEWPORTS;
+} D3D11_VIEWPORTRecS;
 
 /* D3DCOLORVALUE - 16 bytes */
-typedef struct D3DCOLORVALUES {
+typedef struct D3DCOLORVALUERecS {
     float r; /* +0x0 : Float:Single */
     float g; /* +0x4 : Float:Single */
     float b; /* +0x8 : Float:Single */
     float a; /* +0xC : Float:Single */
-} D3DCOLORVALUES;
+} D3DCOLORVALUERecS;
 
 /* DWRITE_HIT_TEST_METRICS - 36 bytes */
-typedef struct DWRITE_HIT_TEST_METRICSS {
+typedef struct DWRITE_HIT_TEST_METRICSRecS {
     uint32_t textPosition; /* +0x0 : Integer */
     uint32_t length; /* +0x4 : Integer */
     float left; /* +0x8 : Float:Single */
@@ -509,28 +506,28 @@ typedef struct DWRITE_HIT_TEST_METRICSS {
     uint32_t bidiLevel; /* +0x18 : Integer */
     uint32_t isText; /* +0x1C : LongBool */
     uint32_t isTrimmed; /* +0x20 : LongBool */
-} DWRITE_HIT_TEST_METRICSS;
+} DWRITE_HIT_TEST_METRICSRecS;
 
 /* DWRITE_LINE_METRICS - 24 bytes */
-typedef struct DWRITE_LINE_METRICSS {
+typedef struct DWRITE_LINE_METRICSRecS {
     uint32_t length; /* +0x0 : Integer */
     uint32_t trailingWhitespaceLength; /* +0x4 : Integer */
     uint32_t newlineLength; /* +0x8 : Integer */
     float height; /* +0xC : Float:Single */
     float baseline; /* +0x10 : Float:Single */
     uint32_t isTrimmed; /* +0x14 : LongBool */
-} DWRITE_LINE_METRICSS;
+} DWRITE_LINE_METRICSRecS;
 
 /* DWRITE_OVERHANG_METRICS - 16 bytes */
-typedef struct DWRITE_OVERHANG_METRICSS {
+typedef struct DWRITE_OVERHANG_METRICSRecS {
     float left; /* +0x0 : Float:Single */
     float top; /* +0x4 : Float:Single */
     float right; /* +0x8 : Float:Single */
     float bottom; /* +0xC : Float:Single */
-} DWRITE_OVERHANG_METRICSS;
+} DWRITE_OVERHANG_METRICSRecS;
 
 /* DWRITE_TEXT_METRICS - 36 bytes */
-typedef struct DWRITE_TEXT_METRICSS {
+typedef struct DWRITE_TEXT_METRICSRecS {
     float left; /* +0x0 : Float:Single */
     float top; /* +0x4 : Float:Single */
     float width; /* +0x8 : Float:Single */
@@ -540,91 +537,91 @@ typedef struct DWRITE_TEXT_METRICSS {
     float layoutHeight; /* +0x18 : Float:Single */
     uint32_t maxBidiReorderingDepth; /* +0x1C : Integer */
     uint32_t lineCount; /* +0x20 : Integer */
-} DWRITE_TEXT_METRICSS;
+} DWRITE_TEXT_METRICSRecS;
 
 /* EncoderParameters - 32 bytes */
-typedef struct EncoderParametersS {
+typedef struct EncoderParametersRecS {
     uint32_t Count; /* +0x0 : Integer */
     uint32_t Parameter; /* +0x4 : None */
     uint8_t _tail[24];
-} EncoderParametersS;
+} EncoderParametersRecS;
 
 /* ENHMETAHEADER3 - 108 bytes */
-typedef struct ENHMETAHEADER3S {
+typedef struct ENHMETAHEADER3RecS {
     uint32_t iType; /* +0x0 : Integer */
     uint32_t nSize; /* +0x4 : Integer */
     PkRect rclBounds; /* +0x8 : record TRect */
-    uint8_t _pad_C[0x18 - 0xC];
+    uint8_t _pad14_C[0x18 - 0xC];
     PkRect rclFrame; /* +0x18 : record TRect */
-    uint8_t _pad_1C[0x28 - 0x1C];
+    uint8_t _pad15_1C[0x28 - 0x1C];
     uint32_t dSignature; /* +0x28 : Integer */
     uint32_t nVersion; /* +0x2C : Integer */
     uint32_t nBytes; /* +0x30 : Integer */
     uint32_t nRecords; /* +0x34 : Integer */
-    uint32_t nHandles; /* +0x38 : Integer */
-    uint32_t sReserved; /* +0x3A : Integer */
+    uint16_t nHandles; /* +0x38 : Integer */
+    uint16_t sReserved; /* +0x3A : Integer */
     uint32_t nDescription; /* +0x3C : Integer */
     uint32_t offDescription; /* +0x40 : Integer */
     uint32_t nPalEntries; /* +0x44 : Integer */
     uint32_t szlDevice; /* +0x48 : record TSize */
-    uint8_t _pad_4C[0x50 - 0x4C];
+    uint8_t _pad16_4C[0x50 - 0x4C];
     uint32_t szlMillimeters; /* +0x50 : record TSize */
-    uint8_t _pad_54[0x58 - 0x54];
+    uint8_t _pad17_54[0x58 - 0x54];
     uint32_t cbPixelFormat; /* +0x58 : Integer */
     uint32_t offPixelFormat; /* +0x5C : Integer */
     uint32_t bOpenGL; /* +0x60 : Integer */
     uint32_t szlMicrometers; /* +0x64 : record TSize */
     uint8_t _tail[4];
-} ENHMETAHEADER3S;
+} ENHMETAHEADER3RecS;
 
 /* EventRegistrationToken - 8 bytes */
-typedef struct EventRegistrationTokenS {
+typedef struct EventRegistrationTokenRecS {
     uint32_t value; /* +0x0 : Int64 */
     uint8_t _tail[4];
-} EventRegistrationTokenS;
+} EventRegistrationTokenRecS;
 
 /* GESTURECONFIG - 12 bytes */
-typedef struct GESTURECONFIGS {
+typedef struct GESTURECONFIGRecS {
     uint32_t dwID; /* +0x0 : Integer */
     uint32_t dwWant; /* +0x4 : Integer */
     uint32_t dwBlock; /* +0x8 : Integer */
-} GESTURECONFIGS;
+} GESTURECONFIGRecS;
 
 /* PropertyItem - 16 bytes */
-typedef struct PropertyItemS {
+typedef struct PropertyItemRecS {
     uint32_t id; /* +0x0 : Integer */
     uint32_t length; /* +0x4 : Integer */
     uint32_t type_; /* +0x8 : Integer */
     uint32_t value; /* +0xC : Pointer */
-} PropertyItemS;
+} PropertyItemRecS;
 
 /* PWMFRect16 - 8 bytes */
-typedef struct PWMFRect16S {
-    uint32_t Left; /* +0x0 : Integer */
-    uint32_t Top; /* +0x2 : Integer */
-    uint32_t Right; /* +0x4 : Integer */
-    uint32_t Bottom; /* +0x6 : Integer */
-} PWMFRect16S;
+typedef struct PWMFRect16RecS {
+    uint16_t Left; /* +0x0 : Integer */
+    uint16_t Top; /* +0x2 : Integer */
+    uint16_t Right; /* +0x4 : Integer */
+    uint16_t Bottom; /* +0x6 : Integer */
+} PWMFRect16RecS;
 
 /* StylusInfo - 12 bytes */
-typedef struct StylusInfoS {
+typedef struct StylusInfoRecS {
     uint32_t tcid; /* +0x0 : Integer */
     uint32_t cid; /* +0x4 : Integer */
     uint32_t bIsInvertedCursor; /* +0x8 : LongBool */
-} StylusInfoS;
+} StylusInfoRecS;
 
 /* SYSTEM_EVENT_DATA - 20 bytes */
-typedef struct SYSTEM_EVENT_DATAS {
-    uint32_t bModifier; /* +0x0 : Integer */
-    uint32_t wKey; /* +0x2 : Char */
+typedef struct SYSTEM_EVENT_DATARecS {
+    uint16_t bModifier; /* +0x0 : Integer */
+    uint16_t wKey; /* +0x2 : Char */
     uint32_t xPos; /* +0x4 : Integer */
     uint32_t yPos; /* +0x8 : Integer */
     uint32_t bCursorMode; /* +0xC : Integer */
     uint32_t dwButtonState; /* +0x10 : Integer */
-} SYSTEM_EVENT_DATAS;
+} SYSTEM_EVENT_DATARecS;
 
 /* TAffineMatrix - 36 bytes */
-typedef struct TAffineMatrixS {
+typedef struct TAffineMatrixRecS {
     float m11; /* +0x0 : Float:Single */
     float m12; /* +0x4 : Float:Single */
     float m31; /* +0x8 : Float:Single */
@@ -634,75 +631,75 @@ typedef struct TAffineMatrixS {
     float m13; /* +0x18 : Float:Single */
     float m23; /* +0x1C : Float:Single */
     float m33; /* +0x20 : Float:Single */
-} TAffineMatrixS;
+} TAffineMatrixRecS;
 
 /* tagBITMAP - 24 bytes */
-typedef struct tagBITMAPS {
+typedef struct tagBITMAPRecS {
     uint32_t bmType; /* +0x0 : Integer */
     uint32_t bmWidth; /* +0x4 : Integer */
     uint32_t bmHeight; /* +0x8 : Integer */
     uint32_t bmWidthBytes; /* +0xC : Integer */
-    uint32_t bmPlanes; /* +0x10 : Integer */
-    uint32_t bmBitsPixel; /* +0x12 : Integer */
+    uint16_t bmPlanes; /* +0x10 : Integer */
+    uint16_t bmBitsPixel; /* +0x12 : Integer */
     uint32_t bmBits; /* +0x14 : Pointer */
-} tagBITMAPS;
+} tagBITMAPRecS;
 
 /* tagBITMAPINFO - 44 bytes */
-typedef struct tagBITMAPINFOS {
+typedef struct tagBITMAPINFORecS {
     uint32_t bmiHeader; /* +0x0 : record tagBITMAPINFOHEADER */
-    uint8_t _pad_4[0x28 - 0x4];
+    uint8_t _pad18_4[0x28 - 0x4];
     uint32_t bmiColors; /* +0x28 : None */
-} tagBITMAPINFOS;
+} tagBITMAPINFORecS;
 
 /* tagBITMAPINFOHEADER - 40 bytes */
-typedef struct tagBITMAPINFOHEADERS {
+typedef struct tagBITMAPINFOHEADERRecS {
     uint32_t biSize; /* +0x0 : Integer */
     uint32_t biWidth; /* +0x4 : Integer */
     uint32_t biHeight; /* +0x8 : Integer */
-    uint32_t biPlanes; /* +0xC : Integer */
-    uint32_t biBitCount; /* +0xE : Integer */
+    uint16_t biPlanes; /* +0xC : Integer */
+    uint16_t biBitCount; /* +0xE : Integer */
     uint32_t biCompression; /* +0x10 : Integer */
     uint32_t biSizeImage; /* +0x14 : Integer */
     uint32_t biXPelsPerMeter; /* +0x18 : Integer */
     uint32_t biYPelsPerMeter; /* +0x1C : Integer */
     uint32_t biClrUsed; /* +0x20 : Integer */
     uint32_t biClrImportant; /* +0x24 : Integer */
-} tagBITMAPINFOHEADERS;
+} tagBITMAPINFOHEADERRecS;
 
 /* tagCONTROLINFO - 16 bytes */
-typedef struct tagCONTROLINFOS {
+typedef struct tagCONTROLINFORecS {
     uint32_t cb; /* +0x0 : Integer */
     uint32_t hAccel; /* +0x4 : Integer */
     uint32_t cAccel; /* +0x8 : Integer */
     uint32_t dwFlags; /* +0xC : Integer */
-} tagCONTROLINFOS;
+} tagCONTROLINFORecS;
 
 /* tagDIBSECTION - 84 bytes */
-typedef struct tagDIBSECTIONS {
+typedef struct tagDIBSECTIONRecS {
     uint32_t dsBm; /* +0x0 : record tagBITMAP */
-    uint8_t _pad_4[0x18 - 0x4];
+    uint8_t _pad19_4[0x18 - 0x4];
     uint32_t dsBmih; /* +0x18 : record tagBITMAPINFOHEADER */
-    uint8_t _pad_1C[0x40 - 0x1C];
+    uint8_t _pad20_1C[0x40 - 0x1C];
     uint32_t dsBitfields; /* +0x40 : None */
-    uint8_t _pad_44[0x4C - 0x44];
+    uint8_t _pad21_44[0x4C - 0x44];
     uint32_t dshSection; /* +0x4C : Integer */
     uint32_t dsOffset; /* +0x50 : Integer */
-} tagDIBSECTIONS;
+} tagDIBSECTIONRecS;
 
 /* tagDVTARGETDEVICE - 16 bytes */
-typedef struct tagDVTARGETDEVICES {
+typedef struct tagDVTARGETDEVICERecS {
     uint32_t tdSize; /* +0x0 : Integer */
-    uint32_t tdDriverNameOffset; /* +0x4 : Integer */
-    uint32_t tdDeviceNameOffset; /* +0x6 : Integer */
-    uint32_t tdPortNameOffset; /* +0x8 : Integer */
-    uint32_t tdExtDevmodeOffset; /* +0xA : Integer */
+    uint16_t tdDriverNameOffset; /* +0x4 : Integer */
+    uint16_t tdDeviceNameOffset; /* +0x6 : Integer */
+    uint16_t tdPortNameOffset; /* +0x8 : Integer */
+    uint16_t tdExtDevmodeOffset; /* +0xA : Integer */
     uint32_t tdData; /* +0xC : None */
-} tagDVTARGETDEVICES;
+} tagDVTARGETDEVICERecS;
 
 /* tagEXCEPINFO - 32 bytes */
-typedef struct tagEXCEPINFOS {
-    uint32_t wCode; /* +0x0 : Integer */
-    uint32_t wReserved; /* +0x2 : Integer */
+typedef struct tagEXCEPINFORecS {
+    uint16_t wCode; /* +0x0 : Integer */
+    uint16_t wReserved; /* +0x2 : Integer */
     uint32_t bstrSource; /* +0x4 : WideString */
     uint32_t bstrDescription; /* +0x8 : WideString */
     uint32_t bstrHelpFile; /* +0xC : WideString */
@@ -710,68 +707,68 @@ typedef struct tagEXCEPINFOS {
     uint32_t pvReserved; /* +0x14 : Pointer */
     uint32_t pfnDeferredFillIn; /* +0x18 : TFNDeferredFillIn */
     uint32_t scode; /* +0x1C : Integer */
-} tagEXCEPINFOS;
+} tagEXCEPINFORecS;
 
 /* tagFORMATETC - 20 bytes */
-typedef struct tagFORMATETCS {
+typedef struct tagFORMATETCRecS {
     uint32_t cfFormat; /* +0x0 : Integer */
     uint32_t ptd; /* +0x4 : PDVTargetDevice */
     uint32_t dwAspect; /* +0x8 : Integer */
     uint32_t lindex; /* +0xC : Integer */
     uint32_t tymed; /* +0x10 : Integer */
-} tagFORMATETCS;
+} tagFORMATETCRecS;
 
 /* tagLOGFONTA - 60 bytes */
-typedef struct tagLOGFONTAS {
+typedef struct tagLOGFONTARecS {
     uint32_t lfHeight; /* +0x0 : Integer */
     uint32_t lfWidth; /* +0x4 : Integer */
     uint32_t lfEscapement; /* +0x8 : Integer */
     uint32_t lfOrientation; /* +0xC : Integer */
     uint32_t lfWeight; /* +0x10 : Integer */
-    uint32_t lfItalic; /* +0x14 : Integer */
-    uint32_t lfUnderline; /* +0x15 : Integer */
-    uint32_t lfStrikeOut; /* +0x16 : Integer */
-    uint32_t lfCharSet; /* +0x17 : Integer */
-    uint32_t lfOutPrecision; /* +0x18 : Integer */
-    uint32_t lfClipPrecision; /* +0x19 : Integer */
-    uint32_t lfQuality; /* +0x1A : Integer */
-    uint32_t lfPitchAndFamily; /* +0x1B : Integer */
+    uint8_t lfItalic; /* +0x14 : Integer */
+    uint8_t lfUnderline; /* +0x15 : Integer */
+    uint8_t lfStrikeOut; /* +0x16 : Integer */
+    uint8_t lfCharSet; /* +0x17 : Integer */
+    uint8_t lfOutPrecision; /* +0x18 : Integer */
+    uint8_t lfClipPrecision; /* +0x19 : Integer */
+    uint8_t lfQuality; /* +0x1A : Integer */
+    uint8_t lfPitchAndFamily; /* +0x1B : Integer */
     uint32_t lfFaceName; /* +0x1C : None */
     uint8_t _tail[28];
-} tagLOGFONTAS;
+} tagLOGFONTARecS;
 
 /* tagLOGFONTW - 92 bytes */
-typedef struct tagLOGFONTWS {
+typedef struct tagLOGFONTWRecS {
     uint32_t lfHeight; /* +0x0 : Integer */
     uint32_t lfWidth; /* +0x4 : Integer */
     uint32_t lfEscapement; /* +0x8 : Integer */
     uint32_t lfOrientation; /* +0xC : Integer */
     uint32_t lfWeight; /* +0x10 : Integer */
-    uint32_t lfItalic; /* +0x14 : Integer */
-    uint32_t lfUnderline; /* +0x15 : Integer */
-    uint32_t lfStrikeOut; /* +0x16 : Integer */
-    uint32_t lfCharSet; /* +0x17 : Integer */
-    uint32_t lfOutPrecision; /* +0x18 : Integer */
-    uint32_t lfClipPrecision; /* +0x19 : Integer */
-    uint32_t lfQuality; /* +0x1A : Integer */
-    uint32_t lfPitchAndFamily; /* +0x1B : Integer */
+    uint8_t lfItalic; /* +0x14 : Integer */
+    uint8_t lfUnderline; /* +0x15 : Integer */
+    uint8_t lfStrikeOut; /* +0x16 : Integer */
+    uint8_t lfCharSet; /* +0x17 : Integer */
+    uint8_t lfOutPrecision; /* +0x18 : Integer */
+    uint8_t lfClipPrecision; /* +0x19 : Integer */
+    uint8_t lfQuality; /* +0x1A : Integer */
+    uint8_t lfPitchAndFamily; /* +0x1B : Integer */
     uint32_t lfFaceName; /* +0x1C : None */
     uint8_t _tail[60];
-} tagLOGFONTWS;
+} tagLOGFONTWRecS;
 
 /* tagMETAHEADER - 18 bytes */
-typedef struct tagMETAHEADERS {
-    uint32_t mtType; /* +0x0 : Integer */
-    uint32_t mtHeaderSize; /* +0x2 : Integer */
-    uint32_t mtVersion; /* +0x4 : Integer */
+typedef struct tagMETAHEADERRecS {
+    uint16_t mtType; /* +0x0 : Integer */
+    uint16_t mtHeaderSize; /* +0x2 : Integer */
+    uint16_t mtVersion; /* +0x4 : Integer */
     uint32_t mtSize; /* +0x6 : Integer */
-    uint32_t mtNoObjects; /* +0xA : Integer */
+    uint16_t mtNoObjects; /* +0xA : Integer */
     uint32_t mtMaxRecord; /* +0xC : Integer */
-    uint32_t mtNoParameters; /* +0x10 : Integer */
-} tagMETAHEADERS;
+    uint16_t mtNoParameters; /* +0x10 : Integer */
+} tagMETAHEADERRecS;
 
 /* tagMSG - 28 bytes */
-typedef struct tagMSGS {
+typedef struct tagMSGRecS {
     uint32_t hwnd; /* +0x0 : Integer */
     uint32_t message; /* +0x4 : Integer */
     uint32_t wParam; /* +0x8 : Integer */
@@ -779,137 +776,124 @@ typedef struct tagMSGS {
     uint32_t time; /* +0x10 : Integer */
     uint32_t pt; /* +0x14 : record TPoint */
     uint8_t _tail[4];
-} tagMSGS;
+} tagMSGRecS;
 
 /* tagSTATSTG - 72 bytes */
-typedef struct tagSTATSTGS {
+typedef struct tagSTATSTGRecS {
     uint32_t pwcsName; /* +0x0 : PWideChar */
     uint32_t dwType; /* +0x4 : Integer */
     uint32_t cbSize; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad22_C[0x10 - 0xC];
     uint32_t mtime; /* +0x10 : record _FILETIME */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad23_14[0x18 - 0x14];
     uint32_t ctime; /* +0x18 : record _FILETIME */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad24_1C[0x20 - 0x1C];
     uint32_t atime; /* +0x20 : record _FILETIME */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad25_24[0x28 - 0x24];
     uint32_t grfMode; /* +0x28 : Integer */
     uint32_t grfLocksSupported; /* +0x2C : Integer */
     uint32_t clsid; /* +0x30 : record TGUID */
-    uint8_t _pad_34[0x40 - 0x34];
+    uint8_t _pad26_34[0x40 - 0x34];
     uint32_t grfStateBits; /* +0x40 : Integer */
     uint32_t reserved; /* +0x44 : Integer */
-} tagSTATSTGS;
+} tagSTATSTGRecS;
 
 /* tagSTGMEDIUM - 12 bytes */
-typedef struct tagSTGMEDIUMS {
+typedef struct tagSTGMEDIUMRecS {
     uint32_t tymed; /* +0x0 : Integer */
     uint32_t hBitmap; /* +0x4 : Integer */
     uint32_t unkForRelease; /* +0x8 : Pointer */
-    uint32_t hMetaFilePict; /* +0x4 : Integer */
-    uint32_t hEnhMetaFile; /* +0x4 : Integer */
-    uint32_t hGlobal; /* +0x4 : Integer */
-    uint32_t lpszFileName; /* +0x4 : PWideChar */
-    uint32_t stm; /* +0x4 : Pointer */
-    uint32_t stg; /* +0x4 : Pointer */
-    uint8_t _tail[4];
-} tagSTGMEDIUMS;
+} tagSTGMEDIUMRecS;
 
 /* TAlignInfo - 16 bytes */
-typedef struct TAlignInfoS {
+typedef struct TAlignInfoRecS {
     uint32_t AlignList; /* +0x0 : class TList */
     uint32_t ControlIndex; /* +0x4 : Integer */
     uint32_t Align; /* +0x8 : TAlign */
     uint32_t Scratch; /* +0xC : Integer */
-} TAlignInfoS;
+} TAlignInfoRecS;
 
 /* TAlphaColorMapEntry - 8 bytes */
-typedef struct TAlphaColorMapEntryS {
+typedef struct TAlphaColorMapEntryRecS {
     uint32_t Value; /* +0x0 : Integer */
     uint32_t Name; /* +0x4 : string */
-} TAlphaColorMapEntryS;
+} TAlphaColorMapEntryRecS;
 
 /* TAlphaColorRec - 4 bytes */
-typedef struct TAlphaColorRecS {
+typedef struct TAlphaColorRecRecS {
     uint32_t Color; /* +0x0 : Integer */
-    uint32_t HiWord; /* +0x0 : Integer */
-    uint32_t LoWord; /* +0x2 : Integer */
-    uint32_t B; /* +0x0 : Integer */
-    uint32_t G; /* +0x1 : Integer */
-    uint32_t R; /* +0x2 : Integer */
-    uint32_t A; /* +0x3 : Integer */
-} TAlphaColorRecS;
+} TAlphaColorRecRecS;
 
 /* TArrayPropInfo - 261 bytes */
-typedef struct TArrayPropInfoS {
-    uint32_t Flags; /* +0x0 : Integer */
-    uint32_t ReadIndex; /* +0x1 : Integer */
-    uint32_t WriteIndex; /* +0x3 : Integer */
+typedef struct TArrayPropInfoRecS {
+    uint8_t Flags; /* +0x0 : Integer */
+    uint16_t ReadIndex; /* +0x1 : Integer */
+    uint16_t WriteIndex; /* +0x3 : Integer */
     uint32_t Name; /* +0x5 : TSymbolName */
     uint8_t _tail[252];
-} TArrayPropInfoS;
+} TArrayPropInfoRecS;
 
 /* TArrayTypeData - 1037 bytes */
-typedef struct TArrayTypeDataS {
+typedef struct TArrayTypeDataRecS {
     uint32_t Size; /* +0x0 : Integer */
     uint32_t ElCount; /* +0x4 : Integer */
     uint32_t ElType; /* +0x8 : PPTypeInfo */
-    uint32_t DimCount; /* +0xC : Integer */
+    uint8_t DimCount; /* +0xC : Integer */
     uint32_t Dims; /* +0xD : None */
     uint8_t _tail[1020];
-} TArrayTypeDataS;
+} TArrayTypeDataRecS;
 
 /* TASKDIALOG_BUTTON - 8 bytes */
-typedef struct TASKDIALOG_BUTTONS {
+typedef struct TASKDIALOG_BUTTONRecS {
     uint32_t nButtonID; /* +0x0 : Integer */
     uint32_t pszButtonText; /* +0x4 : PWideChar */
-} TASKDIALOG_BUTTONS;
+} TASKDIALOG_BUTTONRecS;
 
 /* TAttachment - 6 bytes */
-typedef struct TAttachmentS {
+typedef struct TAttachmentRecS {
     uint8_t Attached; /* +0x0 : Boolean */
-    uint8_t _pad_1[0x2 - 0x1];
-    uint32_t Figure; /* +0x2 : Integer */
-    uint32_t Vertex; /* +0x4 : Integer */
-} TAttachmentS;
+    uint8_t _pad27_1[0x2 - 0x1];
+    uint16_t Figure; /* +0x2 : Integer */
+    uint16_t Vertex; /* +0x4 : Integer */
+} TAttachmentRecS;
 
 /* TAttrData - 2 bytes */
-typedef struct TAttrDataS {
-    uint32_t Len; /* +0x0 : Integer */
-} TAttrDataS;
+typedef struct TAttrDataRecS {
+    uint16_t Len; /* +0x0 : Integer */
+} TAttrDataRecS;
 
 /* TAudioParam - 32 bytes */
-typedef struct TAudioParamS {
+typedef struct TAudioParamRecS {
     uint32_t freq; /* +0x0 : Integer */
     uint32_t channels; /* +0x4 : Integer */
     uint32_t channel_layout; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad28_C[0x10 - 0xC];
     uint32_t fmt; /* +0x10 : None */
     uint32_t swr_ctx; /* +0x14 : PSwrContext */
     uint32_t st_idx; /* +0x18 : Integer */
     uint8_t _tail[4];
-} TAudioParamS;
+} TAudioParamRecS;
 
 /* TAudioStreamInfo - 56 bytes */
-typedef struct TAudioStreamInfoS {
+typedef struct TAudioStreamInfoRecS {
     uint32_t Language; /* +0x0 : string */
     uint32_t CodecName; /* +0x4 : string */
     uint32_t StartTime; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad29_C[0x10 - 0xC];
     uint32_t StartTimeScaled; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad30_14[0x18 - 0x14];
     uint32_t Duration; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad31_1C[0x20 - 0x1C];
     uint32_t DurationScaled; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad32_24[0x28 - 0x24];
     uint32_t BitRate; /* +0x28 : Integer */
     uint32_t Channels; /* +0x2C : Integer */
     uint32_t SampleRate; /* +0x30 : Integer */
     uint32_t SampleFormat; /* +0x34 : None */
-} TAudioStreamInfoS;
+} TAudioStreamInfoRecS;
 
 /* TAVBitStreamFilter - 32 bytes */
-typedef struct TAVBitStreamFilterS {
+typedef struct TAVBitStreamFilterRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t codec_ids; /* +0x4 : PAVCodecID */
     uint32_t priv_class; /* +0x8 : PAVClass */
@@ -918,10 +902,10 @@ typedef struct TAVBitStreamFilterS {
     uint32_t filter; /* +0x14 : None */
     uint32_t close; /* +0x18 : None */
     uint32_t flush; /* +0x1C : None */
-} TAVBitStreamFilterS;
+} TAVBitStreamFilterRecS;
 
 /* TAVBSFContext - 40 bytes */
-typedef struct TAVBSFContextS {
+typedef struct TAVBSFContextRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t filter; /* +0x4 : PAVBitStreamFilter */
     uint32_t internal; /* +0x8 : PAVBSFInternal */
@@ -929,33 +913,33 @@ typedef struct TAVBSFContextS {
     uint32_t par_in; /* +0x10 : PAVCodecParameters */
     uint32_t par_out; /* +0x14 : PAVCodecParameters */
     uint32_t time_base_in; /* +0x18 : record TAVRational */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad33_1C[0x20 - 0x1C];
     uint32_t time_base_out; /* +0x20 : record TAVRational */
     uint8_t _tail[4];
-} TAVBSFContextS;
+} TAVBSFContextRecS;
 
 /* TAVBufferRef - 12 bytes */
-typedef struct TAVBufferRefS {
+typedef struct TAVBufferRefRecS {
     uint32_t buffer; /* +0x0 : PAVBuffer */
     uint32_t data; /* +0x4 : PByte */
     uint32_t size; /* +0x8 : Integer */
-} TAVBufferRefS;
+} TAVBufferRefRecS;
 
 /* TAVChapter - 40 bytes */
-typedef struct TAVChapterS {
+typedef struct TAVChapterRecS {
     uint32_t id; /* +0x0 : Integer */
     uint32_t time_base; /* +0x4 : record TAVRational */
-    uint8_t _pad_8[0x10 - 0x8];
+    uint8_t _pad34_8[0x10 - 0x8];
     uint32_t start; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad35_14[0x18 - 0x14];
     uint32_t eend; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad36_1C[0x20 - 0x1C];
     uint32_t metadata; /* +0x20 : PAVDictionary */
     uint8_t _tail[4];
-} TAVChapterS;
+} TAVChapterRecS;
 
 /* TAVClass - 48 bytes */
-typedef struct TAVClassS {
+typedef struct TAVClassRecS {
     uint32_t class_name; /* +0x0 : PAnsiChar */
     uint32_t item_name; /* +0x4 : None */
     uint32_t option; /* +0x8 : PAVOption */
@@ -968,10 +952,10 @@ typedef struct TAVClassS {
     uint32_t get_category; /* +0x24 : None */
     uint32_t query_ranges; /* +0x28 : None */
     uint32_t child_class_iterate; /* +0x2C : None */
-} TAVClassS;
+} TAVClassRecS;
 
 /* TAVCodec - 124 bytes */
-typedef struct TAVCodecS {
+typedef struct TAVCodecRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t long_name; /* +0x4 : PAnsiChar */
     uint32_t ttype; /* +0x8 : None */
@@ -1003,10 +987,10 @@ typedef struct TAVCodecS {
     uint32_t bsfs; /* +0x70 : PAnsiChar */
     uint32_t hw_configs; /* +0x74 : PPAVCodecHWConfigInternal */
     uint32_t codec_tags; /* +0x78 : PCardinal */
-} TAVCodecS;
+} TAVCodecRecS;
 
 /* TAVCodecContext - 920 bytes */
-typedef struct TAVCodecContextS {
+typedef struct TAVCodecContextRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t log_level_offset; /* +0x4 : Integer */
     uint32_t codec_type; /* +0x8 : None */
@@ -1016,9 +1000,9 @@ typedef struct TAVCodecContextS {
     uint32_t priv_data; /* +0x18 : Pointer */
     uint32_t internal; /* +0x1C : PAVCodecInternal */
     uint32_t opaque; /* +0x20 : Pointer */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad37_24[0x28 - 0x24];
     uint32_t bit_rate; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad38_2C[0x30 - 0x2C];
     uint32_t bit_rate_tolerance; /* +0x30 : Integer */
     uint32_t global_quality; /* +0x34 : Integer */
     uint32_t compression_level; /* +0x38 : Integer */
@@ -1027,7 +1011,7 @@ typedef struct TAVCodecContextS {
     uint32_t extradata; /* +0x44 : PByte */
     uint32_t extradata_size; /* +0x48 : Integer */
     uint32_t time_base; /* +0x4C : record TAVRational */
-    uint8_t _pad_50[0x54 - 0x50];
+    uint8_t _pad39_50[0x54 - 0x50];
     uint32_t ticks_per_frame; /* +0x54 : Integer */
     uint32_t delay; /* +0x58 : Integer */
     uint32_t width; /* +0x5C : Integer */
@@ -1055,7 +1039,7 @@ typedef struct TAVCodecContextS {
     uint32_t prediction_method; /* +0xB4 : Integer */
     uint32_t slice_offset; /* +0xB8 : PInteger */
     uint32_t sample_aspect_ratio; /* +0xBC : record TAVRational */
-    uint8_t _pad_C0[0xC4 - 0xC0];
+    uint8_t _pad40_C0[0xC4 - 0xC0];
     uint32_t me_cmp; /* +0xC4 : Integer */
     uint32_t me_sub_cmp; /* +0xC8 : Integer */
     uint32_t mb_cmp; /* +0xCC : Integer */
@@ -1076,10 +1060,10 @@ typedef struct TAVCodecContextS {
     uint32_t intra_dc_precision; /* +0x108 : Integer */
     uint32_t skip_top; /* +0x10C : Integer */
     uint8_t _tail[648];
-} TAVCodecContextS;
+} TAVCodecContextRecS;
 
 /* TAVCodecDescriptor - 28 bytes */
-typedef struct TAVCodecDescriptorS {
+typedef struct TAVCodecDescriptorRecS {
     uint32_t id; /* +0x0 : None */
     uint32_t type_; /* +0x4 : None */
     uint32_t name; /* +0x8 : PAnsiChar */
@@ -1087,10 +1071,10 @@ typedef struct TAVCodecDescriptorS {
     uint32_t props; /* +0x10 : Integer */
     uint32_t mime_types; /* +0x14 : PPAnsiChar */
     uint32_t profiles; /* +0x18 : Pointer */
-} TAVCodecDescriptorS;
+} TAVCodecDescriptorRecS;
 
 /* TAVCodecParameters - 136 bytes */
-typedef struct TAVCodecParametersS {
+typedef struct TAVCodecParametersRecS {
     uint32_t codec_type; /* +0x0 : None */
     uint32_t codec_id; /* +0x4 : None */
     uint32_t codec_tag; /* +0x8 : record :TAVCodecParameters.:1 */
@@ -1098,7 +1082,7 @@ typedef struct TAVCodecParametersS {
     uint32_t extradata_size; /* +0x10 : Integer */
     uint32_t format; /* +0x14 : Integer */
     uint32_t bit_rate; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad41_1C[0x20 - 0x1C];
     uint32_t bits_per_coded_sample; /* +0x20 : Integer */
     uint32_t bits_per_raw_sample; /* +0x24 : Integer */
     uint32_t profile; /* +0x28 : Integer */
@@ -1106,7 +1090,7 @@ typedef struct TAVCodecParametersS {
     uint32_t width; /* +0x30 : Integer */
     uint32_t height; /* +0x34 : Integer */
     uint32_t sample_aspect_ratio; /* +0x38 : record TAVRational */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad42_3C[0x40 - 0x3C];
     uint32_t field_order; /* +0x40 : TAVFieldOrder */
     uint32_t color_range; /* +0x44 : TAVColorRange */
     uint32_t color_primaries; /* +0x48 : None */
@@ -1114,9 +1098,9 @@ typedef struct TAVCodecParametersS {
     uint32_t color_space; /* +0x50 : None */
     uint32_t chroma_location; /* +0x54 : TAVChromaLocation */
     uint32_t video_delay; /* +0x58 : Integer */
-    uint8_t _pad_5C[0x60 - 0x5C];
+    uint8_t _pad43_5C[0x60 - 0x5C];
     uint32_t channel_layout; /* +0x60 : Int64 */
-    uint8_t _pad_64[0x68 - 0x64];
+    uint8_t _pad44_64[0x68 - 0x64];
     uint32_t channels; /* +0x68 : Integer */
     uint32_t sample_rate; /* +0x6C : Integer */
     uint32_t block_align; /* +0x70 : Integer */
@@ -1125,68 +1109,68 @@ typedef struct TAVCodecParametersS {
     uint32_t trailing_padding; /* +0x7C : Integer */
     uint32_t seek_preroll; /* +0x80 : Integer */
     uint8_t _tail[4];
-} TAVCodecParametersS;
+} TAVCodecParametersRecS;
 
 /* TAVCodecParser - 44 bytes */
-typedef struct TAVCodecParserS {
+typedef struct TAVCodecParserRecS {
     uint32_t codec_ids; /* +0x0 : None */
-    uint8_t _pad_4[0x14 - 0x4];
+    uint8_t _pad45_4[0x14 - 0x4];
     uint32_t priv_data_size; /* +0x14 : Integer */
     uint32_t parser_init; /* +0x18 : None */
     uint32_t parser_parse; /* +0x1C : None */
     uint32_t parser_close; /* +0x20 : None */
     uint32_t split; /* +0x24 : None */
     uint32_t next; /* +0x28 : PAVCodecParser */
-} TAVCodecParserS;
+} TAVCodecParserRecS;
 
 /* TAVCodecParserContext - 344 bytes */
-typedef struct TAVCodecParserContextS {
+typedef struct TAVCodecParserContextRecS {
     uint32_t priv_data; /* +0x0 : Pointer */
     uint32_t parser; /* +0x4 : PAVCodecParser */
     uint32_t frame_offset; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad46_C[0x10 - 0xC];
     uint32_t cur_offset; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad47_14[0x18 - 0x14];
     uint32_t next_frame_offset; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad48_1C[0x20 - 0x1C];
     uint32_t pict_type; /* +0x20 : Integer */
     uint32_t repeat_pict; /* +0x24 : Integer */
     uint32_t pts; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad49_2C[0x30 - 0x2C];
     uint32_t dts; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad50_34[0x38 - 0x34];
     uint32_t last_pts; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad51_3C[0x40 - 0x3C];
     uint32_t last_dts; /* +0x40 : Int64 */
-    uint8_t _pad_44[0x48 - 0x44];
+    uint8_t _pad52_44[0x48 - 0x44];
     uint32_t fetch_timestamp; /* +0x48 : Integer */
     uint32_t cur_frame_start_index; /* +0x4C : Integer */
     uint32_t cur_frame_offset; /* +0x50 : None */
-    uint8_t _pad_54[0x70 - 0x54];
+    uint8_t _pad53_54[0x70 - 0x54];
     uint32_t cur_frame_pts; /* +0x70 : None */
-    uint8_t _pad_74[0x90 - 0x74];
+    uint8_t _pad54_74[0x90 - 0x74];
     uint32_t cur_frame_dts; /* +0x90 : None */
-    uint8_t _pad_94[0xB0 - 0x94];
+    uint8_t _pad55_94[0xB0 - 0x94];
     uint32_t flags; /* +0xB0 : Integer */
-    uint8_t _pad_B4[0xB8 - 0xB4];
+    uint8_t _pad56_B4[0xB8 - 0xB4];
     uint32_t offset; /* +0xB8 : Int64 */
-    uint8_t _pad_BC[0xC0 - 0xBC];
+    uint8_t _pad57_BC[0xC0 - 0xBC];
     uint32_t cur_frame_end; /* +0xC0 : None */
-    uint8_t _pad_C4[0xE0 - 0xC4];
+    uint8_t _pad58_C4[0xE0 - 0xC4];
     uint32_t key_frame; /* +0xE0 : Integer */
-    uint8_t _pad_E4[0xE8 - 0xE4];
+    uint8_t _pad59_E4[0xE8 - 0xE4];
     uint32_t convergence_duration; /* +0xE8 : Int64 */
-    uint8_t _pad_EC[0xF0 - 0xEC];
+    uint8_t _pad60_EC[0xF0 - 0xEC];
     uint32_t dts_sync_point; /* +0xF0 : Integer */
     uint32_t dts_ref_dts_delta; /* +0xF4 : Integer */
     uint32_t pts_dts_delta; /* +0xF8 : Integer */
-    uint8_t _pad_FC[0x100 - 0xFC];
+    uint8_t _pad61_FC[0x100 - 0xFC];
     uint32_t cur_frame_pos; /* +0x100 : None */
-    uint8_t _pad_104[0x120 - 0x104];
+    uint8_t _pad62_104[0x120 - 0x104];
     uint32_t pos; /* +0x120 : Int64 */
-    uint8_t _pad_124[0x128 - 0x124];
+    uint8_t _pad63_124[0x128 - 0x124];
     uint32_t last_pos; /* +0x128 : Int64 */
-    uint8_t _pad_12C[0x130 - 0x12C];
+    uint8_t _pad64_12C[0x130 - 0x12C];
     uint32_t duration; /* +0x130 : Integer */
     uint32_t field_order; /* +0x134 : TAVFieldOrder */
     uint32_t picture_structure; /* +0x138 : TAVPictureStructure */
@@ -1197,38 +1181,38 @@ typedef struct TAVCodecParserContextS {
     uint32_t coded_height; /* +0x14C : Integer */
     uint32_t format; /* +0x150 : Integer */
     uint8_t _tail[4];
-} TAVCodecParserContextS;
+} TAVCodecParserContextRecS;
 
 /* TAVCodecTag - 8 bytes */
-typedef struct TAVCodecTagS {
+typedef struct TAVCodecTagRecS {
     uint32_t id; /* +0x0 : None */
     uint32_t tag; /* +0x4 : Integer */
-} TAVCodecTagS;
+} TAVCodecTagRecS;
 
 /* TAVDictionary - 8 bytes */
-typedef struct TAVDictionaryS {
+typedef struct TAVDictionaryRecS {
     uint32_t count; /* +0x0 : Integer */
     uint32_t elems; /* +0x4 : PAVDictionaryEntry */
-} TAVDictionaryS;
+} TAVDictionaryRecS;
 
 /* TAVDictionaryEntry - 8 bytes */
-typedef struct TAVDictionaryEntryS {
+typedef struct TAVDictionaryEntryRecS {
     uint32_t key; /* +0x0 : PAnsiChar */
     uint32_t value; /* +0x4 : PAnsiChar */
-} TAVDictionaryEntryS;
+} TAVDictionaryEntryRecS;
 
 /* TAVFifoBuffer - 24 bytes */
-typedef struct TAVFifoBufferS {
+typedef struct TAVFifoBufferRecS {
     uint32_t buffer; /* +0x0 : PByte */
     uint32_t rptr; /* +0x4 : PByte */
     uint32_t wptr; /* +0x8 : PByte */
     uint32_t eend; /* +0xC : PByte */
     uint32_t rndx; /* +0x10 : Integer */
     uint32_t wndx; /* +0x14 : Integer */
-} TAVFifoBufferS;
+} TAVFifoBufferRecS;
 
 /* TAVFilter - 68 bytes */
-typedef struct TAVFilterS {
+typedef struct TAVFilterRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t description; /* +0x4 : PAnsiChar */
     uint32_t inputs; /* +0x8 : PAVFilterPad */
@@ -1246,10 +1230,10 @@ typedef struct TAVFilterS {
     uint32_t process_command; /* +0x38 : None */
     uint32_t init_opaque; /* +0x3C : None */
     uint32_t activate; /* +0x40 : None */
-} TAVFilterS;
+} TAVFilterRecS;
 
 /* TAVFilterContext - 88 bytes */
-typedef struct TAVFilterContextS {
+typedef struct TAVFilterContextRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t filter; /* +0x4 : PAVFilter */
     uint32_t name; /* +0x8 : PAnsiChar */
@@ -1266,23 +1250,23 @@ typedef struct TAVFilterContextS {
     uint32_t command_queue; /* +0x34 : Pointer */
     uint32_t enable_str; /* +0x38 : PAnsiChar */
     uint32_t enable; /* +0x3C : Pointer */
-    uint32_t var_values; /* +0x40 : PDouble */
+    double var_values; /* +0x40 : PDouble */
     uint32_t is_disabled; /* +0x44 : Integer */
     uint32_t hw_device_ctx; /* +0x48 : PAVBufferRef */
     uint32_t nb_threads; /* +0x4C : Integer */
     uint32_t ready; /* +0x50 : Integer */
     uint32_t extra_hw_frames; /* +0x54 : Integer */
-} TAVFilterContextS;
+} TAVFilterContextRecS;
 
 /* TAVFilterFormatsConfig - 12 bytes */
-typedef struct TAVFilterFormatsConfigS {
+typedef struct TAVFilterFormatsConfigRecS {
     uint32_t formats; /* +0x0 : PAVFilterFormats */
     uint32_t samplerates; /* +0x4 : PAVFilterFormats */
     uint32_t channel_layouts; /* +0x8 : PAVFilterChannelLayouts */
-} TAVFilterFormatsConfigS;
+} TAVFilterFormatsConfigRecS;
 
 /* TAVFilterGraph - 56 bytes */
-typedef struct TAVFilterGraphS {
+typedef struct TAVFilterGraphRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t filters; /* +0x4 : PPAVFilterContext */
     uint32_t nb_filters; /* +0x8 : Integer */
@@ -1297,18 +1281,18 @@ typedef struct TAVFilterGraphS {
     uint32_t sink_links; /* +0x2C : PPAVFilterLink */
     uint32_t sink_links_count; /* +0x30 : Integer */
     uint32_t disable_auto_convert; /* +0x34 : Integer */
-} TAVFilterGraphS;
+} TAVFilterGraphRecS;
 
 /* TAVFilterInOut - 16 bytes */
-typedef struct TAVFilterInOutS {
+typedef struct TAVFilterInOutRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t filter_ctx; /* +0x4 : PAVFilterContext */
     uint32_t pad_idx; /* +0x8 : Integer */
     uint32_t next; /* +0xC : PAVFilterInOut */
-} TAVFilterInOutS;
+} TAVFilterInOutRecS;
 
 /* TAVFilterLink - 61616 bytes */
-typedef struct TAVFilterLinkS {
+typedef struct TAVFilterLinkRecS {
     uint32_t src; /* +0x0 : PAVFilterContext */
     uint32_t srcpad; /* +0x4 : PAVFilterPad */
     uint32_t dst; /* +0x8 : PAVFilterContext */
@@ -1317,44 +1301,44 @@ typedef struct TAVFilterLinkS {
     uint32_t w; /* +0x14 : Integer */
     uint32_t h; /* +0x18 : Integer */
     uint32_t sample_aspect_ratio; /* +0x1C : record TAVRational */
-    uint8_t _pad_20[0x28 - 0x20];
+    uint8_t _pad65_20[0x28 - 0x20];
     uint32_t channel_layout; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad66_2C[0x30 - 0x2C];
     uint32_t sample_rate; /* +0x30 : Integer */
     uint32_t format; /* +0x34 : Integer */
     uint32_t time_base; /* +0x38 : record TAVRational */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad67_3C[0x40 - 0x3C];
     uint32_t incfg; /* +0x40 : record TAVFilterFormatsConfig */
-    uint8_t _pad_44[0x4C - 0x44];
+    uint8_t _pad68_44[0x4C - 0x44];
     uint32_t outcfg; /* +0x4C : record TAVFilterFormatsConfig */
-    uint8_t _pad_50[0x58 - 0x50];
+    uint8_t _pad69_50[0x58 - 0x50];
     uint32_t init_state; /* +0x58 : Tinit_state */
     uint32_t graph; /* +0x5C : PAVFilterGraph */
     uint32_t current_pts; /* +0x60 : Int64 */
-    uint8_t _pad_64[0x68 - 0x64];
+    uint8_t _pad70_64[0x68 - 0x64];
     uint32_t current_pts_us; /* +0x68 : Int64 */
-    uint8_t _pad_6C[0x70 - 0x6C];
+    uint8_t _pad71_6C[0x70 - 0x6C];
     uint32_t age_index; /* +0x70 : Integer */
     uint32_t frame_rate; /* +0x74 : record TAVRational */
-    uint8_t _pad_78[0x7C - 0x78];
+    uint8_t _pad72_78[0x7C - 0x78];
     uint32_t partial_buf; /* +0x7C : PAVFrame */
     uint32_t partial_buf_size; /* +0x80 : Integer */
     uint32_t min_samples; /* +0x84 : Integer */
     uint32_t max_samples; /* +0x88 : Integer */
     uint32_t channels; /* +0x8C : Integer */
     uint32_t frame_count_in; /* +0x90 : Int64 */
-    uint8_t _pad_94[0x98 - 0x94];
+    uint8_t _pad73_94[0x98 - 0x94];
     uint32_t frame_count_out; /* +0x98 : Int64 */
-    uint8_t _pad_9C[0xA0 - 0x9C];
+    uint8_t _pad74_9C[0xA0 - 0x9C];
     uint32_t frame_pool; /* +0xA0 : Pointer */
     uint32_t frame_wanted_out; /* +0xA4 : Integer */
     uint32_t hw_frames_ctx; /* +0xA8 : PAVBufferRef */
     uint32_t reserved; /* +0xAC : None */
     uint8_t _tail[61440];
-} TAVFilterLinkS;
+} TAVFilterLinkRecS;
 
 /* TAVFormatContext - 1376 bytes */
-typedef struct TAVFormatContextS {
+typedef struct TAVFormatContextRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t iformat; /* +0x4 : PAVInputFormat */
     uint32_t oformat; /* +0x8 : PAVOutputFormat */
@@ -1364,23 +1348,23 @@ typedef struct TAVFormatContextS {
     uint32_t nb_streams; /* +0x18 : Integer */
     uint32_t streams; /* +0x1C : PPAVStream */
     uint32_t filename; /* +0x20 : None */
-    uint8_t _pad_24[0x420 - 0x24];
+    uint8_t _pad75_24[0x420 - 0x24];
     uint32_t url; /* +0x420 : PAnsiChar */
-    uint8_t _pad_424[0x428 - 0x424];
+    uint8_t _pad76_424[0x428 - 0x424];
     uint32_t start_time; /* +0x428 : Int64 */
-    uint8_t _pad_42C[0x430 - 0x42C];
+    uint8_t _pad77_42C[0x430 - 0x42C];
     uint32_t duration; /* +0x430 : Int64 */
-    uint8_t _pad_434[0x438 - 0x434];
+    uint8_t _pad78_434[0x438 - 0x434];
     uint32_t bit_rate; /* +0x438 : Int64 */
-    uint8_t _pad_43C[0x440 - 0x43C];
+    uint8_t _pad79_43C[0x440 - 0x43C];
     uint32_t packet_size; /* +0x440 : Integer */
     uint32_t max_delay; /* +0x444 : Integer */
     uint32_t flags; /* +0x448 : Integer */
-    uint8_t _pad_44C[0x450 - 0x44C];
+    uint8_t _pad80_44C[0x450 - 0x44C];
     uint32_t probesize; /* +0x450 : Int64 */
-    uint8_t _pad_454[0x458 - 0x454];
+    uint8_t _pad81_454[0x458 - 0x454];
     uint32_t max_analyze_duration; /* +0x458 : Int64 */
-    uint8_t _pad_45C[0x460 - 0x45C];
+    uint8_t _pad82_45C[0x460 - 0x45C];
     uint32_t key; /* +0x460 : PByte */
     uint32_t keylen; /* +0x464 : Integer */
     uint32_t nb_programs; /* +0x468 : Integer */
@@ -1394,15 +1378,15 @@ typedef struct TAVFormatContextS {
     uint32_t chapters; /* +0x488 : PPAVChapter */
     uint32_t metadata; /* +0x48C : PAVDictionary */
     uint32_t start_time_realtime; /* +0x490 : Int64 */
-    uint8_t _pad_494[0x498 - 0x494];
+    uint8_t _pad83_494[0x498 - 0x494];
     uint32_t fps_probe_size; /* +0x498 : Integer */
     uint32_t error_recognition; /* +0x49C : Integer */
     uint32_t interrupt_callback; /* +0x4A0 : record TAVIOInterruptCB */
-    uint8_t _pad_4A4[0x4A8 - 0x4A4];
+    uint8_t _pad84_4A4[0x4A8 - 0x4A4];
     uint32_t debug; /* +0x4A8 : Integer */
-    uint8_t _pad_4AC[0x4B0 - 0x4AC];
+    uint8_t _pad85_4AC[0x4B0 - 0x4AC];
     uint32_t max_interleave_delta; /* +0x4B0 : Int64 */
-    uint8_t _pad_4B4[0x4B8 - 0x4B4];
+    uint8_t _pad86_4B4[0x4B8 - 0x4B4];
     uint32_t strict_std_compliance; /* +0x4B8 : Integer */
     uint32_t event_flags; /* +0x4BC : Integer */
     uint32_t max_ts_probe; /* +0x4C0 : Integer */
@@ -1414,9 +1398,9 @@ typedef struct TAVFormatContextS {
     uint32_t use_wallclock_as_timestamps; /* +0x4D8 : Integer */
     uint32_t avio_flags; /* +0x4DC : Integer */
     uint32_t duration_estimation_method; /* +0x4E0 : TAVDurationEstimationMethod */
-    uint8_t _pad_4E4[0x4E8 - 0x4E4];
+    uint8_t _pad87_4E4[0x4E8 - 0x4E4];
     uint32_t skip_initial_bytes; /* +0x4E8 : Int64 */
-    uint8_t _pad_4EC[0x4F0 - 0x4EC];
+    uint8_t _pad88_4EC[0x4F0 - 0x4EC];
     uint32_t correct_ts_overflow; /* +0x4F0 : Integer */
     uint32_t seek2any; /* +0x4F4 : Integer */
     uint32_t flush_packets; /* +0x4F8 : Integer */
@@ -1434,14 +1418,14 @@ typedef struct TAVFormatContextS {
     uint32_t opaque; /* +0x528 : Pointer */
     uint32_t control_message_cb; /* +0x52C : Tav_format_control_messageCall */
     uint8_t _tail[48];
-} TAVFormatContextS;
+} TAVFormatContextRecS;
 
 /* TAVFrame - 408 bytes */
-typedef struct TAVFrameS {
+typedef struct TAVFrameRecS {
     uint32_t data; /* +0x0 : None */
-    uint8_t _pad_4[0x20 - 0x4];
+    uint8_t _pad89_4[0x20 - 0x4];
     uint32_t linesize; /* +0x20 : None */
-    uint8_t _pad_24[0x40 - 0x24];
+    uint8_t _pad90_24[0x40 - 0x24];
     uint32_t extended_data; /* +0x40 : PPByte */
     uint32_t width; /* +0x44 : Integer */
     uint32_t height; /* +0x48 : Integer */
@@ -1450,31 +1434,31 @@ typedef struct TAVFrameS {
     uint32_t key_frame; /* +0x54 : Integer */
     uint32_t pict_type; /* +0x58 : TAVPictureType */
     uint32_t sample_aspect_ratio; /* +0x5C : record TAVRational */
-    uint8_t _pad_60[0x68 - 0x60];
+    uint8_t _pad91_60[0x68 - 0x60];
     uint32_t pts; /* +0x68 : Int64 */
-    uint8_t _pad_6C[0x70 - 0x6C];
+    uint8_t _pad92_6C[0x70 - 0x6C];
     uint32_t pkt_pts; /* +0x70 : Int64 */
-    uint8_t _pad_74[0x78 - 0x74];
+    uint8_t _pad93_74[0x78 - 0x74];
     uint32_t pkt_dts; /* +0x78 : Int64 */
-    uint8_t _pad_7C[0x80 - 0x7C];
+    uint8_t _pad94_7C[0x80 - 0x7C];
     uint32_t coded_picture_number; /* +0x80 : Integer */
     uint32_t display_picture_number; /* +0x84 : Integer */
     uint32_t quality; /* +0x88 : Integer */
     uint32_t opaque; /* +0x8C : Pointer */
     uint32_t error; /* +0x90 : None */
-    uint8_t _pad_94[0xD0 - 0x94];
+    uint8_t _pad95_94[0xD0 - 0x94];
     uint32_t repeat_pict; /* +0xD0 : Integer */
     uint32_t interlaced_frame; /* +0xD4 : Integer */
     uint32_t top_field_first; /* +0xD8 : Integer */
     uint32_t palette_has_changed; /* +0xDC : Integer */
     uint32_t reordered_opaque; /* +0xE0 : Int64 */
-    uint8_t _pad_E4[0xE8 - 0xE4];
+    uint8_t _pad96_E4[0xE8 - 0xE4];
     uint32_t sample_rate; /* +0xE8 : Integer */
-    uint8_t _pad_EC[0xF0 - 0xEC];
+    uint8_t _pad97_EC[0xF0 - 0xEC];
     uint32_t channel_layout; /* +0xF0 : Int64 */
-    uint8_t _pad_F4[0xF8 - 0xF4];
+    uint8_t _pad98_F4[0xF8 - 0xF4];
     uint32_t buf; /* +0xF8 : None */
-    uint8_t _pad_FC[0x118 - 0xFC];
+    uint8_t _pad99_FC[0x118 - 0xFC];
     uint32_t extended_buf; /* +0x118 : PPAVBufferRef */
     uint32_t nb_extended_buf; /* +0x11C : Integer */
     uint32_t side_data; /* +0x120 : PPAVFrameSideData */
@@ -1486,11 +1470,11 @@ typedef struct TAVFrameS {
     uint32_t colorspace; /* +0x138 : None */
     uint32_t chroma_location; /* +0x13C : TAVChromaLocation */
     uint32_t best_effort_timestamp; /* +0x140 : Int64 */
-    uint8_t _pad_144[0x148 - 0x144];
+    uint8_t _pad100_144[0x148 - 0x144];
     uint32_t pkt_pos; /* +0x148 : Int64 */
-    uint8_t _pad_14C[0x150 - 0x14C];
+    uint8_t _pad101_14C[0x150 - 0x14C];
     uint32_t pkt_duration; /* +0x150 : Int64 */
-    uint8_t _pad_154[0x158 - 0x154];
+    uint8_t _pad102_154[0x158 - 0x154];
     uint32_t metadata; /* +0x158 : PAVDictionary */
     uint32_t decode_error_flags; /* +0x15C : Integer */
     uint32_t channels; /* +0x160 : Integer */
@@ -1507,19 +1491,19 @@ typedef struct TAVFrameS {
     uint32_t crop_right; /* +0x18C : Integer */
     uint32_t private_ref; /* +0x190 : PAVBufferRef */
     uint8_t _tail[4];
-} TAVFrameS;
+} TAVFrameRecS;
 
 /* TAVFrameSideData - 20 bytes */
-typedef struct TAVFrameSideDataS {
+typedef struct TAVFrameSideDataRecS {
     uint32_t type_; /* +0x0 : TAVFrameSideDataType */
     uint32_t data; /* +0x4 : PByte */
     uint32_t size; /* +0x8 : Integer */
     uint32_t metadata; /* +0xC : PAVDictionary */
     uint32_t buf; /* +0x10 : PAVBufferRef */
-} TAVFrameSideDataS;
+} TAVFrameSideDataRecS;
 
 /* TAVHWAccel - 68 bytes */
-typedef struct TAVHWAccelS {
+typedef struct TAVHWAccelRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t ttype; /* +0x4 : None */
     uint32_t id; /* +0x8 : None */
@@ -1537,20 +1521,20 @@ typedef struct TAVHWAccelS {
     uint32_t priv_data_size; /* +0x38 : Integer */
     uint32_t caps_internal; /* +0x3C : Integer */
     uint32_t frame_params; /* +0x40 : None */
-} TAVHWAccelS;
+} TAVHWAccelRecS;
 
 /* TAVIndexEntry - 24 bytes */
-typedef struct TAVIndexEntryS {
+typedef struct TAVIndexEntryRecS {
     uint32_t pos; /* +0x0 : Int64 */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad103_4[0x8 - 0x4];
     uint32_t timestamp; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad104_C[0x10 - 0xC];
     uint32_t flags_size; /* +0x10 : Integer */
     uint32_t min_distance; /* +0x14 : Integer */
-} TAVIndexEntryS;
+} TAVIndexEntryRecS;
 
 /* TAVInputFormat - 88 bytes */
-typedef struct TAVInputFormatS {
+typedef struct TAVInputFormatRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t long_name; /* +0x4 : PAnsiChar */
     uint32_t flags; /* +0x8 : Integer */
@@ -1573,10 +1557,10 @@ typedef struct TAVInputFormatS {
     uint32_t get_device_list; /* +0x4C : None */
     uint32_t create_device_capabilities; /* +0x50 : None */
     uint32_t free_device_capabilities; /* +0x54 : None */
-} TAVInputFormatS;
+} TAVInputFormatRecS;
 
 /* TAVIOContext - 184 bytes */
-typedef struct TAVIOContextS {
+typedef struct TAVIOContextRecS {
     uint32_t av_class; /* +0x0 : PAVClass */
     uint32_t buffer; /* +0x4 : PByte */
     uint32_t buffer_size; /* +0x8 : Integer */
@@ -1586,9 +1570,9 @@ typedef struct TAVIOContextS {
     uint32_t read_packet; /* +0x18 : None */
     uint32_t write_packet; /* +0x1C : None */
     uint32_t seek; /* +0x20 : None */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad105_24[0x28 - 0x24];
     uint32_t pos; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad106_2C[0x30 - 0x2C];
     uint32_t eof_reached; /* +0x30 : Integer */
     uint32_t write_flag; /* +0x34 : Integer */
     uint32_t max_packet_size; /* +0x38 : Integer */
@@ -1600,11 +1584,11 @@ typedef struct TAVIOContextS {
     uint32_t read_seek; /* +0x50 : None */
     uint32_t seekable; /* +0x54 : Integer */
     uint32_t maxsize; /* +0x58 : Int64 */
-    uint8_t _pad_5C[0x60 - 0x5C];
+    uint8_t _pad107_5C[0x60 - 0x5C];
     uint32_t direct; /* +0x60 : Integer */
-    uint8_t _pad_64[0x68 - 0x64];
+    uint8_t _pad108_64[0x68 - 0x64];
     uint32_t bytes_read; /* +0x68 : Int64 */
-    uint8_t _pad_6C[0x70 - 0x6C];
+    uint8_t _pad109_6C[0x70 - 0x6C];
     uint32_t seek_count; /* +0x70 : Integer */
     uint32_t writeout_count; /* +0x74 : Integer */
     uint32_t orig_buffer_size; /* +0x78 : Integer */
@@ -1614,39 +1598,39 @@ typedef struct TAVIOContextS {
     uint32_t write_data_type; /* +0x88 : None */
     uint32_t ignore_boundary_point; /* +0x8C : Integer */
     uint32_t current_type; /* +0x90 : TAVIODataMarkerType */
-    uint8_t _pad_94[0x98 - 0x94];
+    uint8_t _pad110_94[0x98 - 0x94];
     uint32_t last_time; /* +0x98 : Int64 */
-    uint8_t _pad_9C[0xA0 - 0x9C];
+    uint8_t _pad111_9C[0xA0 - 0x9C];
     uint32_t short_seek_get; /* +0xA0 : None */
-    uint8_t _pad_A4[0xA8 - 0xA4];
+    uint8_t _pad112_A4[0xA8 - 0xA4];
     uint32_t written; /* +0xA8 : Int64 */
-    uint8_t _pad_AC[0xB0 - 0xAC];
+    uint8_t _pad113_AC[0xB0 - 0xAC];
     uint32_t buf_ptr_max; /* +0xB0 : PByte */
     uint32_t min_packet_size; /* +0xB4 : Integer */
-} TAVIOContextS;
+} TAVIOContextRecS;
 
 /* TAVIOInterruptCB - 8 bytes */
-typedef struct TAVIOInterruptCBS {
+typedef struct TAVIOInterruptCBRecS {
     uint32_t callback; /* +0x0 : None */
     uint32_t opaque; /* +0x4 : Pointer */
-} TAVIOInterruptCBS;
+} TAVIOInterruptCBRecS;
 
 /* TAVOption - 48 bytes */
-typedef struct TAVOptionS {
+typedef struct TAVOptionRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t help; /* +0x4 : PAnsiChar */
     uint32_t offset; /* +0x8 : Integer */
     uint32_t ttype; /* +0xC : TAVOptionType */
     uint32_t default_val; /* +0x10 : record _Tdefault_val */
-    uint8_t _pad_14[0x18 - 0x14];
-    float min; /* +0x18 : Float:Double */
-    float max; /* +0x20 : Float:Double */
+    uint8_t _pad114_14[0x18 - 0x14];
+    double min; /* +0x18 : Float:Double */
+    double max; /* +0x20 : Float:Double */
     uint32_t flags; /* +0x28 : Integer */
     uint32_t uunit; /* +0x2C : PAnsiChar */
-} TAVOptionS;
+} TAVOptionRecS;
 
 /* TAVOutputFormat - 108 bytes */
-typedef struct TAVOutputFormatS {
+typedef struct TAVOutputFormatRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t long_name; /* +0x4 : PAnsiChar */
     uint32_t mime_type; /* +0x8 : PAnsiChar */
@@ -1674,16 +1658,16 @@ typedef struct TAVOutputFormatS {
     uint32_t init; /* +0x60 : None */
     uint32_t deinit; /* +0x64 : None */
     uint32_t check_bitstream; /* +0x68 : None */
-} TAVOutputFormatS;
+} TAVOutputFormatRecS;
 
 /* TAVPacket - 72 bytes */
-typedef struct TAVPacketS {
+typedef struct TAVPacketRecS {
     uint32_t buf; /* +0x0 : PAVBufferRef */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad115_4[0x8 - 0x4];
     uint32_t pts; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad116_C[0x10 - 0xC];
     uint32_t dts; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad117_14[0x18 - 0x14];
     uint32_t data; /* +0x18 : PByte */
     uint32_t size; /* +0x1C : Integer */
     uint32_t stream_index; /* +0x20 : Integer */
@@ -1691,44 +1675,44 @@ typedef struct TAVPacketS {
     uint32_t side_data; /* +0x28 : PAVPacketSideData */
     uint32_t side_data_elems; /* +0x2C : Integer */
     uint32_t duration; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad118_34[0x38 - 0x34];
     uint32_t pos; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad119_3C[0x40 - 0x3C];
     uint32_t convergence_duration; /* +0x40 : Int64 */
     uint8_t _tail[4];
-} TAVPacketS;
+} TAVPacketRecS;
 
 /* TAVPacketSideData - 12 bytes */
-typedef struct TAVPacketSideDataS {
+typedef struct TAVPacketSideDataRecS {
     uint32_t data; /* +0x0 : PByte */
     uint32_t size; /* +0x4 : Integer */
     uint32_t type_; /* +0x8 : TAVPacketSideDataType */
-} TAVPacketSideDataS;
+} TAVPacketSideDataRecS;
 
 /* TAVPicture - 64 bytes */
-typedef struct TAVPictureS {
+typedef struct TAVPictureRecS {
     uint32_t data; /* +0x0 : None */
-    uint8_t _pad_4[0x20 - 0x4];
+    uint8_t _pad120_4[0x20 - 0x4];
     uint32_t linesize; /* +0x20 : None */
     uint8_t _tail[28];
-} TAVPictureS;
+} TAVPictureRecS;
 
 /* TAVProbeData - 16 bytes */
-typedef struct TAVProbeDataS {
+typedef struct TAVProbeDataRecS {
     uint32_t filename; /* +0x0 : PAnsiChar */
     uint32_t buf; /* +0x4 : PAnsiChar */
     uint32_t buf_size; /* +0x8 : Integer */
     uint32_t mime_type; /* +0xC : PAnsiChar */
-} TAVProbeDataS;
+} TAVProbeDataRecS;
 
 /* TAVProfile - 8 bytes */
-typedef struct TAVProfileS {
+typedef struct TAVProfileRecS {
     uint32_t profile; /* +0x0 : Integer */
     uint32_t name; /* +0x4 : PAnsiChar */
-} TAVProfileS;
+} TAVProfileRecS;
 
 /* TAVProgram - 72 bytes */
-typedef struct TAVProgramS {
+typedef struct TAVProgramRecS {
     uint32_t id; /* +0x0 : Integer */
     uint32_t flags; /* +0x4 : Integer */
     uint32_t discard; /* +0x8 : None */
@@ -1740,60 +1724,60 @@ typedef struct TAVProgramS {
     uint32_t pcr_pid; /* +0x20 : Integer */
     uint32_t pmt_version; /* +0x24 : Integer */
     uint32_t start_time; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad121_2C[0x30 - 0x2C];
     uint32_t end_time; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad122_34[0x38 - 0x34];
     uint32_t pts_wrap_reference; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad123_3C[0x40 - 0x3C];
     uint32_t pts_wrap_behavior; /* +0x40 : Integer */
     uint8_t _tail[4];
-} TAVProgramS;
+} TAVProgramRecS;
 
 /* TAVRational - 8 bytes */
-typedef struct TAVRationalS {
+typedef struct TAVRationalRecS {
     uint32_t num; /* +0x0 : Integer */
     uint32_t den; /* +0x4 : Integer */
-} TAVRationalS;
+} TAVRationalRecS;
 
 /* TAVStream - 424 bytes */
-typedef struct TAVStreamS {
+typedef struct TAVStreamRecS {
     uint32_t index; /* +0x0 : Integer */
     uint32_t id; /* +0x4 : Integer */
     uint32_t codec; /* +0x8 : PAVCodecContext */
     uint32_t priv_data; /* +0xC : Pointer */
     uint32_t time_base; /* +0x10 : record TAVRational */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad124_14[0x18 - 0x14];
     uint32_t start_time; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad125_1C[0x20 - 0x1C];
     uint32_t duration; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad126_24[0x28 - 0x24];
     uint32_t nb_frames; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad127_2C[0x30 - 0x2C];
     uint32_t disposition; /* +0x30 : Integer */
     uint32_t discard; /* +0x34 : None */
     uint32_t sample_aspect_ratio; /* +0x38 : record TAVRational */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad128_3C[0x40 - 0x3C];
     uint32_t metadata; /* +0x40 : PAVDictionary */
     uint32_t avg_frame_rate; /* +0x44 : record TAVRational */
-    uint8_t _pad_48[0x50 - 0x48];
+    uint8_t _pad129_48[0x50 - 0x48];
     uint32_t attached_pic; /* +0x50 : record TAVPacket */
-    uint8_t _pad_54[0x98 - 0x54];
+    uint8_t _pad130_54[0x98 - 0x54];
     uint32_t side_data; /* +0x98 : PAVPacketSideData */
     uint32_t nb_side_data; /* +0x9C : Integer */
     uint32_t event_flags; /* +0xA0 : Integer */
     uint32_t r_frame_rate; /* +0xA4 : record TAVRational */
-    uint8_t _pad_A8[0xAC - 0xA8];
+    uint8_t _pad131_A8[0xAC - 0xA8];
     uint32_t recommended_encoder_configuration; /* +0xAC : PAnsiChar */
     uint32_t codecpar; /* +0xB0 : PAVCodecParameters */
     uint32_t unused; /* +0xB4 : Pointer */
     uint32_t pts_wrap_bits; /* +0xB8 : Integer */
-    uint8_t _pad_BC[0xC0 - 0xBC];
+    uint8_t _pad132_BC[0xC0 - 0xBC];
     uint32_t first_dts; /* +0xC0 : Int64 */
-    uint8_t _pad_C4[0xC8 - 0xC4];
+    uint8_t _pad133_C4[0xC8 - 0xC4];
     uint32_t cur_dts; /* +0xC8 : Int64 */
-    uint8_t _pad_CC[0xD0 - 0xCC];
+    uint8_t _pad134_CC[0xD0 - 0xCC];
     uint32_t last_IP_pts; /* +0xD0 : Int64 */
-    uint8_t _pad_D4[0xD8 - 0xD4];
+    uint8_t _pad135_D4[0xD8 - 0xD4];
     uint32_t last_IP_duration; /* +0xD8 : Integer */
     uint32_t probe_packets; /* +0xDC : Integer */
     uint32_t codec_info_nb_frames; /* +0xE0 : Integer */
@@ -1801,9 +1785,9 @@ typedef struct TAVStreamS {
     uint32_t parser; /* +0xE8 : PAVCodecParserContext */
     uint32_t unused7; /* +0xEC : Pointer */
     uint32_t unused6; /* +0xF0 : record TAVProbeData */
-    uint8_t _pad_F4[0x100 - 0xF4];
+    uint8_t _pad136_F4[0x100 - 0xF4];
     uint32_t unused5; /* +0x100 : None */
-    uint8_t _pad_104[0x188 - 0x104];
+    uint8_t _pad137_104[0x188 - 0x104];
     uint32_t index_entries; /* +0x188 : PAVIndexEntry */
     uint32_t nb_index_entries; /* +0x18C : Integer */
     uint32_t index_entries_allocated_size; /* +0x190 : Integer */
@@ -1812,10 +1796,10 @@ typedef struct TAVStreamS {
     uint32_t unused9; /* +0x19C : Integer */
     uint32_t unused10; /* +0x1A0 : Integer */
     uint32_t internal; /* +0x1A4 : PAVStreamInternal */
-} TAVStreamS;
+} TAVStreamRecS;
 
 /* TAVStreamInternal - 44 bytes */
-typedef struct TAVStreamInternalS {
+typedef struct TAVStreamInternalRecS {
     uint32_t reorder; /* +0x0 : Integer */
     uint32_t bsfcs; /* +0x4 : PPAVBSFContext */
     uint32_t nb_bsfcs; /* +0x8 : Integer */
@@ -1824,139 +1808,132 @@ typedef struct TAVStreamInternalS {
     uint32_t avctx_inited; /* +0x14 : Integer */
     uint32_t orig_codec_id; /* +0x18 : None */
     uint32_t extract_extradata; /* +0x1C : record Textract_extradata */
-    uint8_t _pad_20[0x28 - 0x20];
+    uint8_t _pad138_20[0x28 - 0x20];
     uint32_t need_context_update; /* +0x28 : Integer */
-} TAVStreamInternalS;
+} TAVStreamInternalRecS;
 
 /* TAVSubtitle - 32 bytes */
-typedef struct TAVSubtitleS {
+typedef struct TAVSubtitleRecS {
     uint32_t format; /* +0x0 : Integer */
     uint32_t start_display_time; /* +0x4 : Integer */
     uint32_t end_display_time; /* +0x8 : Integer */
     uint32_t num_rects; /* +0xC : Integer */
     uint32_t rects; /* +0x10 : PPAVSubtitleRect */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad139_14[0x18 - 0x14];
     uint32_t pts; /* +0x18 : Int64 */
     uint8_t _tail[4];
-} TAVSubtitleS;
+} TAVSubtitleRecS;
 
 /* TAVSubtitleRect - 132 bytes */
-typedef struct TAVSubtitleRectS {
+typedef struct TAVSubtitleRectRecS {
     uint32_t x; /* +0x0 : Integer */
     uint32_t y; /* +0x4 : Integer */
     uint32_t w; /* +0x8 : Integer */
     uint32_t h; /* +0xC : Integer */
     uint32_t nb_colors; /* +0x10 : Integer */
     uint32_t pict; /* +0x14 : record TAVPicture */
-    uint8_t _pad_18[0x54 - 0x18];
+    uint8_t _pad140_18[0x54 - 0x18];
     uint32_t data; /* +0x54 : None */
-    uint8_t _pad_58[0x64 - 0x58];
+    uint8_t _pad141_58[0x64 - 0x58];
     uint32_t linesize; /* +0x64 : None */
-    uint8_t _pad_68[0x74 - 0x68];
+    uint8_t _pad142_68[0x74 - 0x68];
     uint32_t type_; /* +0x74 : TAVSubtitleType */
     uint32_t text; /* +0x78 : PAnsiChar */
     uint32_t ass; /* +0x7C : PAnsiChar */
     uint32_t flags; /* +0x80 : Integer */
-} TAVSubtitleRectS;
+} TAVSubtitleRectRecS;
 
 /* TBitmapCodecSaveParams - 4 bytes */
-typedef struct TBitmapCodecSaveParamsS {
+typedef struct TBitmapCodecSaveParamsRecS {
     uint32_t Quality; /* +0x0 : Integer */
-} TBitmapCodecSaveParamsS;
+} TBitmapCodecSaveParamsRecS;
 
 /* TBoundingBox - 24 bytes */
-typedef struct TBoundingBoxS {
+typedef struct TBoundingBoxRecS {
     float Left; /* +0x0 : Float:Single */
     float Top; /* +0x4 : Float:Single */
     float Near; /* +0x8 : Float:Single */
     float Right; /* +0xC : Float:Single */
     float Bottom; /* +0x10 : Float:Single */
     float Far; /* +0x14 : Float:Single */
-    uint32_t TopLeftNear; /* +0x0 : record TPoint3D */
-    uint8_t _pad_4[0xC - 0x4];
-    uint32_t BottomRightFar; /* +0xC : record TPoint3D */
-    uint32_t MinCorner; /* +0x0 : record TPoint3D */
-    uint8_t _pad_4[0xC - 0x4];
-    uint32_t MaxCorner; /* +0xC : record TPoint3D */
-    uint8_t _tail[8];
-} TBoundingBoxS;
+} TBoundingBoxRecS;
 
 /* TBrushData - 16 bytes */
-typedef struct TBrushDataS {
+typedef struct TBrushDataRecS {
     uint32_t Handle; /* +0x0 : Integer */
     uint32_t Color; /* +0x4 : Integer */
     uint32_t Bitmap; /* +0x8 : class TBitmap */
-    uint32_t Style; /* +0xC : TBrushStyle */
+    uint8_t Style; /* +0xC : TBrushStyle */
     uint8_t OwnsBitmap; /* +0xD : Boolean */
     uint8_t _tail[2];
-} TBrushDataS;
+} TBrushDataRecS;
 
 /* TCamera - 24 bytes */
-typedef struct TCameraS {
-    uint32_t Pos; /* +0x0 : record TPointF */
-    float Angle; /* +0x8 : Float:Double */
+typedef struct TCameraRecS {
+    PkPoint Pos; /* +0x0 : record TPointF */
+    double Angle; /* +0x8 : Float:Double */
     float Scale; /* +0x10 : Float:Single */
     uint8_t _tail[4];
-} TCameraS;
+} TCameraRecS;
 
 /* TCaretPosition - 8 bytes */
-typedef struct TCaretPositionS {
+typedef struct TCaretPositionRecS {
     uint32_t Line; /* +0x0 : Integer */
     uint32_t Pos; /* +0x4 : Integer */
-} TCaretPositionS;
+} TCaretPositionRecS;
 
 /* TChangedLink - 8 bytes */
-typedef struct TChangedLinkS {
+typedef struct TChangedLinkRecS {
     uint32_t Link; /* +0x0 : class TImageLink */
     uint32_t Index; /* +0x4 : Integer */
-} TChangedLinkS;
+} TChangedLinkRecS;
 
 /* TCharacterRange - 8 bytes */
-typedef struct TCharacterRangeS {
+typedef struct TCharacterRangeRecS {
     uint32_t First; /* +0x0 : Integer */
     uint32_t Length; /* +0x4 : Integer */
-} TCharacterRangeS;
+} TCharacterRangeRecS;
 
 /* TCharRec - 28 bytes */
-typedef struct TCharRecS {
+typedef struct TCharRecRecS {
     uint32_t Glyph; /* +0x0 : class TFontGlyph */
     PkRectF SrcRect; /* +0x4 : record TRectF */
-    uint8_t _pad_8[0x14 - 0x8];
+    uint8_t _pad143_8[0x14 - 0x8];
     uint32_t Bitmap; /* +0x14 : class TBitmap */
     uint8_t BitmapRef; /* +0x18 : Boolean */
     uint8_t _tail[3];
-} TCharRecS;
+} TCharRecRecS;
 
 /* TChildControlInfo - 12 bytes */
-typedef struct TChildControlInfoS {
+typedef struct TChildControlInfoRecS {
     uint32_t Parent; /* +0x0 : Integer */
     uint32_t ParentStyle; /* +0x4 : Integer */
     uint32_t StyleHookClass; /* +0x8 : TSysStyleHookClass */
-} TChildControlInfoS;
+} TChildControlInfoRecS;
 
 /* TContextShaderSource - 12 bytes */
-typedef struct TContextShaderSourceS {
+typedef struct TContextShaderSourceRecS {
     uint32_t Arch; /* +0x0 : TContextShaderArch */
     PkDynArray Code; /* +0x4 : DynArray:TContextShaderCode */
     PkDynArray Variables; /* +0x8 : TArray<TContextShaderVariable> */
-} TContextShaderSourceS;
+} TContextShaderSourceRecS;
 
 /* TContextShaderVariable - 24 bytes */
-typedef struct TContextShaderVariableS {
+typedef struct TContextShaderVariableRecS {
     uint32_t Name; /* +0x0 : string */
     uint32_t Kind; /* +0x4 : TContextShaderVariableKind */
     uint32_t Index; /* +0x8 : Integer */
     uint32_t Size; /* +0xC : Integer */
     uint32_t ShaderKind; /* +0x10 : TContextShaderKind */
     uint32_t TextureUnit; /* +0x14 : Integer */
-} TContextShaderVariableS;
+} TContextShaderVariableRecS;
 
 /* TControlData - 80 bytes */
-typedef struct TControlDataS {
+typedef struct TControlDataRecS {
     uint32_t ClassID; /* +0x0 : record TGUID */
-    uint8_t _pad_4[0x10 - 0x4];
+    uint8_t _pad144_4[0x10 - 0x4];
     uint32_t EventIID; /* +0x10 : record TGUID */
-    uint8_t _pad_14[0x20 - 0x14];
+    uint8_t _pad145_14[0x20 - 0x14];
     uint32_t EventCount; /* +0x20 : Integer */
     uint32_t EventDispIDs; /* +0x24 : Pointer */
     uint32_t LicenseKey; /* +0x28 : Pointer */
@@ -1969,84 +1946,84 @@ typedef struct TControlDataS {
     uint32_t Reserved; /* +0x44 : Integer */
     uint32_t InstanceCount; /* +0x48 : Integer */
     uint32_t EnumPropDescs; /* +0x4C : class TList */
-} TControlDataS;
+} TControlDataRecS;
 
 /* TConversionFormat - 8 bytes */
-typedef struct TConversionFormatS {
+typedef struct TConversionFormatRecS {
     uint32_t ConversionClass; /* +0x0 : TConversionClass */
     uint32_t Extension; /* +0x4 : string */
-} TConversionFormatS;
+} TConversionFormatRecS;
 
 /* TCursorRec - 12 bytes */
-typedef struct TCursorRecS {
+typedef struct TCursorRecRecS {
     uint32_t Next; /* +0x0 : PCursorRec */
     uint32_t Index; /* +0x4 : Integer */
     uint32_t Handle; /* +0x8 : Integer */
-} TCursorRecS;
+} TCursorRecRecS;
 
 /* TDataObjectInfo - 36 bytes */
-typedef struct TDataObjectInfoS {
+typedef struct TDataObjectInfoRecS {
     uint32_t FormatEtc; /* +0x0 : record tagFORMATETC */
-    uint8_t _pad_4[0x14 - 0x4];
+    uint8_t _pad146_4[0x14 - 0x4];
     uint32_t StgMedium; /* +0x14 : record tagSTGMEDIUM */
-    uint8_t _pad_18[0x20 - 0x18];
+    uint8_t _pad147_18[0x20 - 0x18];
     uint8_t OwnedByDataObject; /* +0x20 : Boolean */
     uint8_t _tail[3];
-} TDataObjectInfoS;
+} TDataObjectInfoRecS;
 
 /* TDeviceDisplayMetrics - 40 bytes */
-typedef struct TDeviceDisplayMetricsS {
+typedef struct TDeviceDisplayMetricsRecS {
     uint32_t PhysicalScreenSize; /* +0x0 : record TSize */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad148_4[0x8 - 0x4];
     uint32_t LogicalScreenSize; /* +0x8 : record TSize */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad149_C[0x10 - 0xC];
     uint32_t RawScreenSize; /* +0x10 : record TSize */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad150_14[0x18 - 0x14];
     float AspectRatio; /* +0x18 : Float:Single */
     uint32_t PixelsPerInch; /* +0x1C : Integer */
     float ScreenScale; /* +0x20 : Float:Single */
     float FontScale; /* +0x24 : Float:Single */
-} TDeviceDisplayMetricsS;
+} TDeviceDisplayMetricsRecS;
 
 /* TDisplay - 80 bytes */
-typedef struct TDisplayS {
+typedef struct TDisplayRecS {
     uint32_t Id; /* +0x0 : Integer */
     uint32_t Index; /* +0x4 : Integer */
     uint8_t Primary; /* +0x8 : Boolean */
-    uint8_t _pad_9[0xC - 0x9];
+    uint8_t _pad151_9[0xC - 0x9];
     PkRectF Bounds; /* +0xC : record TRectF */
-    uint8_t _pad_10[0x1C - 0x10];
+    uint8_t _pad152_10[0x1C - 0x10];
     PkRect PhysicalBounds; /* +0x1C : record TRect */
-    uint8_t _pad_20[0x2C - 0x20];
+    uint8_t _pad153_20[0x2C - 0x20];
     PkRectF Workarea; /* +0x2C : record TRectF */
-    uint8_t _pad_30[0x3C - 0x30];
+    uint8_t _pad154_30[0x3C - 0x30];
     PkRect PhysicalWorkarea; /* +0x3C : record TRect */
-    uint8_t _pad_40[0x4C - 0x40];
+    uint8_t _pad155_40[0x4C - 0x40];
     float Scale; /* +0x4C : Float:Single */
-} TDisplayS;
+} TDisplayRecS;
 
 /* TDragObject - 32 bytes */
-typedef struct TDragObjectS {
+typedef struct TDragObjectRecS {
     uint32_t Source; /* +0x0 : class TObject */
     PkDynArray Files; /* +0x4 : TArray<string> */
     uint32_t Data; /* +0x8 : record TValue */
     uint8_t _tail[20];
-} TDragObjectS;
+} TDragObjectRecS;
 
 /* TDTFormatPart - 20 bytes */
-typedef struct TDTFormatPartS {
+typedef struct TDTFormatPartRecS {
     uint32_t Part; /* +0x0 : TDTPart */
     uint32_t Value; /* +0x4 : Integer */
     uint32_t DisplayFormat; /* +0x8 : string */
     uint32_t Range; /* +0xC : record TRange<System.Integer> */
     uint8_t _tail[4];
-} TDTFormatPartS;
+} TDTFormatPartRecS;
 
 /* TEditAction - 20 bytes */
-typedef struct TEditActionS {
-    uint32_t ActionType; /* +0x0 : TActionType */
+typedef struct TEditActionRecS {
+    uint8_t ActionType; /* +0x0 : TActionType */
     uint8_t PairedWithPrev; /* +0x1 : Boolean */
-    uint8_t _pad_2[0x4 - 0x2];
+    uint8_t _pad156_2[0x4 - 0x2];
     uint32_t StartPosition; /* +0x4 : Integer */
     uint32_t DeletedFragment; /* +0x8 : string */
     uint32_t Length; /* +0xC : Integer */
@@ -2054,87 +2031,86 @@ typedef struct TEditActionS {
     uint8_t WasSelected; /* +0x11 : Boolean */
     uint8_t CaretMoved; /* +0x12 : Boolean */
     uint8_t _tail[1];
-} TEditActionS;
+} TEditActionRecS;
 
 /* TElementAlias - 8 bytes */
-typedef struct TElementAliasS {
+typedef struct TElementAliasRecS {
     uint32_t Name; /* +0x0 : string */
     uint32_t Value; /* +0x4 : Integer */
-} TElementAliasS;
+} TElementAliasRecS;
 
 /* TEnumAliasEntry - 8 bytes */
-typedef struct TEnumAliasEntryS {
+typedef struct TEnumAliasEntryRecS {
     uint32_t TypeInfo; /* +0x0 : PTypeInfo */
     PkDynArray Aliases; /* +0x4 : TArray<TElementAlias> */
-} TEnumAliasEntryS;
+} TEnumAliasEntryRecS;
 
 /* TExceptionRecord - 80 bytes */
-typedef struct TExceptionRecordS {
+typedef struct TExceptionRecordRecS {
     uint32_t ExceptionCode; /* +0x0 : Integer */
     uint32_t ExceptionFlags; /* +0x4 : Integer */
     uint32_t ExceptionRecord; /* +0x8 : PExceptionRecord */
     uint32_t ExceptionAddress; /* +0xC : Pointer */
     uint32_t NumberParameters; /* +0x10 : Integer */
     uint32_t ExceptionInformation; /* +0x14 : None */
-    uint32_t ExceptAddr; /* +0x14 : Pointer */
     uint32_t ExceptObject; /* +0x18 : Pointer */
     uint8_t _tail[52];
-} TExceptionRecordS;
+} TExceptionRecordRecS;
 
 /* Textract_extradata - 12 bytes */
-typedef struct Textract_extradataS {
+typedef struct Textract_extradataRecS {
     uint32_t bsf; /* +0x0 : PAVBSFContext */
     uint32_t pkt; /* +0x4 : PAVPacket */
     uint32_t inited; /* +0x8 : Integer */
-} Textract_extradataS;
+} Textract_extradataRecS;
 
 /* TFF_AudioSpec - 24 bytes */
-typedef struct TFF_AudioSpecS {
+typedef struct TFF_AudioSpecRecS {
     uint32_t freq; /* +0x0 : Integer */
-    uint32_t format; /* +0x4 : Integer */
-    uint32_t channels; /* +0x6 : Integer */
-    uint32_t silence; /* +0x7 : Integer */
-    uint32_t samples; /* +0x8 : Integer */
-    uint32_t padding; /* +0xA : Integer */
+    uint16_t format; /* +0x4 : Integer */
+    uint8_t channels; /* +0x6 : Integer */
+    uint8_t silence; /* +0x7 : Integer */
+    uint16_t samples; /* +0x8 : Integer */
+    uint16_t padding; /* +0xA : Integer */
     uint32_t size; /* +0xC : Integer */
     uint32_t callback; /* +0x10 : TFF_AudioSpecCallback */
     uint32_t userdata; /* +0x14 : Pointer */
-} TFF_AudioSpecS;
+} TFF_AudioSpecRecS;
 
 /* TFieldExEntry - 265 bytes */
-typedef struct TFieldExEntryS {
-    uint32_t Flags; /* +0x0 : Integer */
+typedef struct TFieldExEntryRecS {
+    uint8_t Flags; /* +0x0 : Integer */
     uint32_t TypeRef; /* +0x1 : PPTypeInfo */
     uint32_t Offset; /* +0x5 : Integer */
     uint32_t Name; /* +0x9 : TSymbolName */
     uint8_t _tail[252];
-} TFieldExEntryS;
+} TFieldExEntryRecS;
 
 /* TFigSegment - 24 bytes */
-typedef struct TFigSegmentS {
-    float Angle; /* +0x0 : Float:Double */
-    float Bend; /* +0x8 : Float:Double */
+typedef struct TFigSegmentRecS {
+    double Angle; /* +0x0 : Float:Double */
+    double Bend; /* +0x8 : Float:Double */
     float Length; /* +0x10 : Float:Single */
     uint8_t _tail[4];
-} TFigSegmentS;
+} TFigSegmentRecS;
 
 /* TFigVertex - 16 bytes */
-typedef struct TFigVertexS {
-    uint32_t Point; /* +0x0 : record TPointF */
+typedef struct TFigVertexRecS {
+    PkPoint Point; /* +0x0 : record TPointF */
     uint32_t NumAttach; /* +0x8 : Integer */
     PkDynArray Attach; /* +0xC : DynArray::TFigVertex.:1 */
-} TFigVertexS;
+} TFigVertexRecS;
 
 /* TFileFormat - 16 bytes */
-typedef struct TFileFormatS {
+typedef struct TFileFormatRecS {
     uint32_t GraphicClass; /* +0x0 : TGraphicClass */
     uint32_t Extension; /* +0x4 : string */
     uint32_t Description; /* +0x8 : string */
     uint32_t DescResID; /* +0xC : Integer */
-} TFileFormatS;
+} TFileFormatRecS;
 
 /* TFilterGraph - 32 bytes */
-typedef struct TFilterGraphS {
+typedef struct TFilterGraphRecS {
     uint32_t index; /* +0x0 : Integer */
     uint32_t graph_desc; /* +0x4 : PAnsiChar */
     uint32_t graph; /* +0x8 : PAVFilterGraph */
@@ -2143,81 +2119,81 @@ typedef struct TFilterGraphS {
     uint32_t nb_inputs; /* +0x14 : Integer */
     uint32_t outputs; /* +0x18 : PPOutputFilter */
     uint32_t nb_outputs; /* +0x1C : Integer */
-} TFilterGraphS;
+} TFilterGraphRecS;
 
 /* TFilterRec - 12 bytes */
-typedef struct TFilterRecS {
+typedef struct TFilterRecRecS {
     uint32_t Name; /* +0x0 : string */
     uint32_t Desc; /* +0x4 : string */
     PkDynArray Values; /* +0x8 : TArray<TFilterValueRec> */
-} TFilterRecS;
+} TFilterRecRecS;
 
 /* TFindGraphicClassContext - 16 bytes */
-typedef struct TFindGraphicClassContextS {
+typedef struct TFindGraphicClassContextRecS {
     uint32_t FSource; /* +0x0 : TFindGraphicClassSource */
     uint32_t FFileName; /* +0x4 : string */
     uint32_t FClipboardFormat; /* +0x8 : Integer */
     uint32_t FStream; /* +0xC : class TStream */
-} TFindGraphicClassContextS;
+} TFindGraphicClassContextRecS;
 
 /* TFindStyleResourceInfo - 12 bytes */
-typedef struct TFindStyleResourceInfoS {
+typedef struct TFindStyleResourceInfoRecS {
     uint8_t Clone; /* +0x0 : Boolean */
-    uint8_t _pad_1[0x4 - 0x1];
+    uint8_t _pad157_1[0x4 - 0x1];
     uint32_t ResourceName; /* +0x4 : string */
     uint32_t Resource; /* +0x8 : class TFmxObject */
-} TFindStyleResourceInfoS;
+} TFindStyleResourceInfoRecS;
 
 /* TFlowLayoutRules - 12 bytes */
-typedef struct TFlowLayoutRulesS {
-    uint32_t Justify; /* +0x0 : TFlowJustify */
-    uint32_t JustifyLast; /* +0x1 : TFlowJustify */
-    uint32_t Direction; /* +0x2 : TFlowDirection */
+typedef struct TFlowLayoutRulesRecS {
+    uint8_t Justify; /* +0x0 : TFlowJustify */
+    uint8_t JustifyLast; /* +0x1 : TFlowJustify */
+    uint16_t Direction; /* +0x2 : TFlowDirection */
     float HorizontalGap; /* +0x4 : Float:Single */
     float VerticalGap; /* +0x8 : Float:Single */
-} TFlowLayoutRulesS;
+} TFlowLayoutRulesRecS;
 
 /* TFontData - 144 bytes */
-typedef struct TFontDataS {
+typedef struct TFontDataRecS {
     uint32_t Handle; /* +0x0 : Integer */
     uint32_t Height; /* +0x4 : Integer */
     uint32_t Orientation; /* +0x8 : Integer */
-    uint32_t Pitch; /* +0xC : TFontPitch */
-    uint32_t Style; /* +0xD : TFontStylesBase */
-    uint32_t Charset; /* +0xE : Integer */
+    uint8_t Pitch; /* +0xC : TFontPitch */
+    uint8_t Style; /* +0xD : TFontStylesBase */
+    uint8_t Charset; /* +0xE : Integer */
     uint32_t Name; /* +0xF : TFontDataName */
-    uint8_t _pad_13[0x8C - 0x13];
+    uint8_t _pad158_13[0x8C - 0x13];
     uint32_t Quality; /* +0x8C : TFontQuality */
-} TFontDataS;
+} TFontDataRecS;
 
 /* TFontSettings - 28 bytes */
-typedef struct TFontSettingsS {
+typedef struct TFontSettingsRecS {
     uint32_t Family; /* +0x0 : string */
     uint32_t Style; /* +0x4 : record TFontStyleExt */
-    uint8_t _pad_8[0x14 - 0x8];
+    uint8_t _pad159_8[0x14 - 0x8];
     float Size; /* +0x14 : Float:Single */
     float Scale; /* +0x18 : Float:Single */
-} TFontSettingsS;
+} TFontSettingsRecS;
 
 /* TFontStyleExt - 16 bytes */
-typedef struct TFontStyleExtS {
+typedef struct TFontStyleExtRecS {
     uint32_t SimpleStyle; /* +0x0 : TFontStyles */
     uint32_t Weight; /* +0x4 : TFontWeight */
     uint32_t Slant; /* +0x8 : TFontSlant */
     uint32_t Stretch; /* +0xC : TFontStretch */
-} TFontStyleExtS;
+} TFontStyleExtRecS;
 
 /* TFragmentDeleted - 12 bytes */
-typedef struct TFragmentDeletedS {
+typedef struct TFragmentDeletedRecS {
     uint32_t StartPos; /* +0x0 : Integer */
     uint32_t Fragment; /* +0x4 : string */
     uint8_t Selected; /* +0x8 : Boolean */
     uint8_t CaretMoved; /* +0x9 : Boolean */
     uint8_t _tail[2];
-} TFragmentDeletedS;
+} TFragmentDeletedRecS;
 
 /* TFrameHookInfo - 32 bytes */
-typedef struct TFrameHookInfoS {
+typedef struct TFrameHookInfoRecS {
     uint32_t TaskIndex; /* +0x0 : Integer */
     uint32_t FrameNumber; /* +0x4 : Integer */
     uint32_t Picture; /* +0x8 : PAVPicture */
@@ -2226,214 +2202,214 @@ typedef struct TFrameHookInfoS {
     uint32_t Height; /* +0x14 : Integer */
     uint32_t PTS; /* +0x18 : Int64 */
     uint8_t _tail[4];
-} TFrameHookInfoS;
+} TFrameHookInfoRecS;
 
 /* TFrameInfo - 144 bytes */
-typedef struct TFrameInfoS {
+typedef struct TFrameInfoRecS {
     uint32_t PixFmt; /* +0x0 : None */
     uint32_t Width; /* +0x4 : Integer */
     uint32_t Height; /* +0x8 : Integer */
     uint8_t IsKeyFrame; /* +0xC : Boolean */
     uint8_t IsInterlaced; /* +0xD : Boolean */
     uint8_t IsTopFieldFirst; /* +0xE : Boolean */
-    uint8_t _pad_F[0x10 - 0xF];
+    uint8_t _pad160_F[0x10 - 0xF];
     uint32_t PictureType; /* +0x10 : TAVPictureType */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad161_14[0x18 - 0x14];
     uint32_t PTS; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad162_1C[0x20 - 0x1C];
     uint32_t OriginalDTS; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad163_24[0x28 - 0x24];
     uint32_t OriginalPTS; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad164_2C[0x30 - 0x2C];
     uint32_t StreamIndex; /* +0x30 : Integer */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad165_34[0x38 - 0x34];
     uint32_t Position; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad166_3C[0x40 - 0x3C];
     uint8_t Ready; /* +0x40 : Boolean */
-    uint8_t _pad_41[0x44 - 0x41];
+    uint8_t _pad167_41[0x44 - 0x41];
     uint32_t Picture; /* +0x44 : record TAVPicture */
-    uint8_t _pad_48[0x84 - 0x48];
+    uint8_t _pad168_48[0x84 - 0x48];
     uint32_t Buffer; /* +0x84 : PByte */
     uint32_t Size; /* +0x88 : Integer */
     uint32_t Frame; /* +0x8C : PAVFrame */
-} TFrameInfoS;
+} TFrameInfoRecS;
 
 /* TFreeInstItem - 8 bytes */
-typedef struct TFreeInstItemS {
+typedef struct TFreeInstItemRecS {
     uint32_t Item; /* +0x0 : PInstItem */
     uint32_t Tag; /* +0x4 : Integer */
-} TFreeInstItemS;
+} TFreeInstItemRecS;
 
 /* TFullScreenSavedState - 28 bytes */
-typedef struct TFullScreenSavedStateS {
+typedef struct TFullScreenSavedStateRecS {
     uint32_t BorderStyle; /* +0x0 : TFmxFormBorderStyle */
     uint32_t WindowState; /* +0x4 : TWindowState */
-    uint32_t Position; /* +0x8 : record TPointF */
+    PkPoint Position; /* +0x8 : record TPointF */
     uint32_t Size; /* +0x10 : record TSizeF */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad169_14[0x18 - 0x14];
     uint8_t IsFullscreen; /* +0x18 : Boolean */
     uint8_t _tail[3];
-} TFullScreenSavedStateS;
+} TFullScreenSavedStateRecS;
 
 /* TGestureEventInfo - 48 bytes */
-typedef struct TGestureEventInfoS {
+typedef struct TGestureEventInfoRecS {
     uint32_t GestureID; /* +0x0 : Integer */
-    uint32_t Location; /* +0x4 : record TPointF */
+    PkPoint Location; /* +0x4 : record TPointF */
     uint32_t Flags; /* +0xC : TInteractiveGestureFlags */
-    float Angle; /* +0x10 : Float:Double */
-    uint32_t InertiaVector; /* +0x18 : record TPointF */
+    double Angle; /* +0x10 : Float:Double */
+    PkPoint InertiaVector; /* +0x18 : record TPointF */
     uint32_t Distance; /* +0x20 : Integer */
-    uint32_t TapLocation; /* +0x24 : record TPointF */
+    PkPoint TapLocation; /* +0x24 : record TPointF */
     uint8_t _tail[4];
-} TGestureEventInfoS;
+} TGestureEventInfoRecS;
 
 /* TGlobalContext - 16 bytes */
-typedef struct TGlobalContextS {
+typedef struct TGlobalContextRecS {
     uint32_t FGlobalContextCounter; /* +0x0 : Integer */
     uint32_t FGlobalContextToken; /* +0x4 : IInterface */
     uint8_t _tail[8];
-} TGlobalContextS;
+} TGlobalContextRecS;
 
 /* TGPPoint - 8 bytes */
-typedef struct TGPPointS {
+typedef struct TGPPointRecS {
     uint32_t X; /* +0x0 : Integer */
     uint32_t Y; /* +0x4 : Integer */
-} TGPPointS;
+} TGPPointRecS;
 
 /* TGPPointF - 8 bytes */
-typedef struct TGPPointFS {
+typedef struct TGPPointFRecS {
     float X; /* +0x0 : Float:Single */
     float Y; /* +0x4 : Float:Single */
-} TGPPointFS;
+} TGPPointFRecS;
 
 /* TGPRect - 16 bytes */
-typedef struct TGPRectS {
+typedef struct TGPRectRecS {
     uint32_t X; /* +0x0 : Integer */
     uint32_t Y; /* +0x4 : Integer */
     uint32_t Width; /* +0x8 : Integer */
     uint32_t Height; /* +0xC : Integer */
-} TGPRectS;
+} TGPRectRecS;
 
 /* TGPRectF - 16 bytes */
-typedef struct TGPRectFS {
+typedef struct TGPRectFRecS {
     float X; /* +0x0 : Float:Single */
     float Y; /* +0x4 : Float:Single */
     float Width; /* +0x8 : Float:Single */
     float Height; /* +0xC : Float:Single */
-} TGPRectFS;
+} TGPRectFRecS;
 
 /* TGPSizeF - 8 bytes */
-typedef struct TGPSizeFS {
+typedef struct TGPSizeFRecS {
     float Width; /* +0x0 : Float:Single */
     float Height; /* +0x4 : Float:Single */
-} TGPSizeFS;
+} TGPSizeFRecS;
 
 /* TGUID - 16 bytes */
-typedef struct TGUIDS {
+typedef struct TGUIDRecS {
     uint32_t D1; /* +0x0 : Integer */
-    uint32_t D2; /* +0x4 : Integer */
-    uint32_t D3; /* +0x6 : Integer */
+    uint16_t D2; /* +0x4 : Integer */
+    uint16_t D3; /* +0x6 : Integer */
     uint32_t D4; /* +0x8 : None */
     uint8_t _tail[4];
-} TGUIDS;
+} TGUIDRecS;
 
 /* THandleRef - 4 bytes */
-typedef struct THandleRefS {
-    uint32_t Figure; /* +0x0 : Integer */
-    uint32_t Handle; /* +0x2 : Integer */
-} THandleRefS;
+typedef struct THandleRefRecS {
+    uint16_t Figure; /* +0x0 : Integer */
+    uint16_t Handle; /* +0x2 : Integer */
+} THandleRefRecS;
 
 /* THintInfo - 64 bytes */
-typedef struct THintInfoS {
+typedef struct THintInfoRecS {
     uint32_t HintControl; /* +0x0 : class TControl */
     uint32_t HintWindowClass; /* +0x4 : THintWindowClass */
     uint32_t HintPos; /* +0x8 : record TPoint */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad170_C[0x10 - 0xC];
     uint32_t HintMaxWidth; /* +0x10 : Integer */
     uint32_t HintColor; /* +0x14 : Integer */
     PkRect CursorRect; /* +0x18 : record TRect */
-    uint8_t _pad_1C[0x28 - 0x1C];
+    uint8_t _pad171_1C[0x28 - 0x1C];
     uint32_t CursorPos; /* +0x28 : record TPoint */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad172_2C[0x30 - 0x2C];
     uint32_t ReshowTimeout; /* +0x30 : Integer */
     uint32_t HideTimeout; /* +0x34 : Integer */
     uint32_t HintStr; /* +0x38 : string */
     uint32_t HintData; /* +0x3C : Pointer */
-} THintInfoS;
+} THintInfoRecS;
 
 /* THookInfo - 32 bytes */
-typedef struct THookInfoS {
+typedef struct THookInfoRecS {
     uint32_t TaskIndex; /* +0x0 : Integer */
     uint32_t Bitmap; /* +0x4 : class TBitmap */
     uint32_t FrameNumber; /* +0x8 : Integer */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad173_C[0x10 - 0xC];
     uint32_t PTS; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad174_14[0x18 - 0x14];
     uint8_t Update; /* +0x18 : Boolean */
     uint8_t StopHook; /* +0x19 : Boolean */
     uint8_t _tail[6];
-} THookInfoS;
+} THookInfoRecS;
 
 /* THWDevice - 12 bytes */
-typedef struct THWDeviceS {
+typedef struct THWDeviceRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t type_; /* +0x4 : TAVHWDeviceType */
     uint32_t device_ref; /* +0x8 : PAVBufferRef */
-} THWDeviceS;
+} THWDeviceRecS;
 
 /* TIMEParagraphLine - 24 bytes */
-typedef struct TIMEParagraphLineS {
+typedef struct TIMEParagraphLineRecS {
     uint32_t Range; /* +0x0 : record TTextRange */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad175_4[0x8 - 0x4];
     PkRectF LineRect; /* +0x8 : record TRectF */
     uint8_t _tail[12];
-} TIMEParagraphLineS;
+} TIMEParagraphLineRecS;
 
 /* TInputChanged - 5 bytes */
-typedef struct TInputChangedS {
+typedef struct TInputChangedRecS {
     uint8_t angle; /* +0x0 : Boolean */
     uint8_t bend; /* +0x1 : Boolean */
     uint8_t length; /* +0x2 : Boolean */
     uint8_t Thickness; /* +0x3 : Boolean */
     uint8_t order; /* +0x4 : Boolean */
-} TInputChangedS;
+} TInputChangedRecS;
 
 /* TInputFile - 120 bytes */
-typedef struct TInputFileS {
+typedef struct TInputFileRecS {
     uint32_t ctx; /* +0x0 : PAVFormatContext */
     uint32_t eof_reached; /* +0x4 : Integer */
     uint32_t eagain; /* +0x8 : Integer */
     uint32_t ist_index; /* +0xC : Integer */
     uint32_t loop; /* +0x10 : Integer */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad176_14[0x18 - 0x14];
     uint32_t duration; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad177_1C[0x20 - 0x1C];
     uint32_t time_base; /* +0x20 : record TAVRational */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad178_24[0x28 - 0x24];
     uint32_t input_ts_offset; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad179_2C[0x30 - 0x2C];
     uint32_t ts_offset; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad180_34[0x38 - 0x34];
     uint32_t last_ts; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad181_3C[0x40 - 0x3C];
     uint32_t start_time; /* +0x40 : Int64 */
-    uint8_t _pad_44[0x48 - 0x44];
+    uint8_t _pad182_44[0x48 - 0x44];
     uint32_t seek_timestamp; /* +0x48 : Integer */
-    uint8_t _pad_4C[0x50 - 0x4C];
+    uint8_t _pad183_4C[0x50 - 0x4C];
     uint32_t recording_time; /* +0x50 : Int64 */
-    uint8_t _pad_54[0x58 - 0x54];
+    uint8_t _pad184_54[0x58 - 0x54];
     uint32_t nb_streams; /* +0x58 : Integer */
     uint32_t nb_streams_warn; /* +0x5C : Integer */
     uint32_t rate_emu; /* +0x60 : Integer */
     uint32_t accurate_seek; /* +0x64 : Integer */
     uint32_t pkt; /* +0x68 : PAVPacket */
-    uint8_t _pad_6C[0x70 - 0x6C];
+    uint8_t _pad185_6C[0x70 - 0x6C];
     uint32_t last_pts; /* +0x70 : Int64 */
     uint8_t _tail[4];
-} TInputFileS;
+} TInputFileRecS;
 
 /* TInputFilter - 72 bytes */
-typedef struct TInputFilterS {
+typedef struct TInputFilterRecS {
     uint32_t filter; /* +0x0 : PAVFilterContext */
     uint32_t ist; /* +0x4 : PInputStream */
     uint32_t graph; /* +0x8 : PFilterGraph */
@@ -2444,22 +2420,22 @@ typedef struct TInputFilterS {
     uint32_t width; /* +0x1C : Integer */
     uint32_t height; /* +0x20 : Integer */
     uint32_t sample_aspect_ratio; /* +0x24 : record TAVRational */
-    uint8_t _pad_28[0x2C - 0x28];
+    uint8_t _pad186_28[0x2C - 0x28];
     uint32_t sample_rate; /* +0x2C : Integer */
     uint32_t channels; /* +0x30 : Integer */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad187_34[0x38 - 0x34];
     uint32_t channel_layout; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad188_3C[0x40 - 0x3C];
     uint32_t hw_frames_ctx; /* +0x40 : PAVBufferRef */
     uint32_t eof; /* +0x44 : Integer */
-} TInputFilterS;
+} TInputFilterRecS;
 
 /* TInputFrameInfo - 48 bytes */
-typedef struct TInputFrameInfoS {
+typedef struct TInputFrameInfoRecS {
     uint32_t TimeStamp; /* +0x0 : Int64 */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad189_4[0x8 - 0x4];
     uint32_t LastTimeStamp; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad190_C[0x10 - 0xC];
     uint32_t FrameNumber; /* +0x10 : Integer */
     uint32_t Width; /* +0x14 : Integer */
     uint32_t Height; /* +0x18 : Integer */
@@ -2468,19 +2444,19 @@ typedef struct TInputFrameInfoS {
     uint32_t BytesPerFrame; /* +0x24 : Integer */
     uint32_t PixelFormat; /* +0x28 : None */
     uint32_t Palette; /* +0x2C : PByte */
-} TInputFrameInfoS;
+} TInputFrameInfoRecS;
 
 /* TInputOptions - 20 bytes */
-typedef struct TInputOptionsS {
+typedef struct TInputOptionsRecS {
     uint32_t FileName; /* +0x0 : TPathFileName */
     uint32_t Options; /* +0x4 : AnsiString */
     uint32_t Presets; /* +0x8 : AnsiString */
     uint32_t Tag; /* +0xC : Integer */
     uint32_t Data; /* +0x10 : Pointer */
-} TInputOptionsS;
+} TInputOptionsRecS;
 
 /* TInputStream - 368 bytes */
-typedef struct TInputStreamS {
+typedef struct TInputStreamRecS {
     uint32_t file_index; /* +0x0 : Integer */
     uint32_t st; /* +0x4 : PAVStream */
     uint32_t discard; /* +0x8 : Integer */
@@ -2492,40 +2468,40 @@ typedef struct TInputStreamS {
     uint32_t filter_frame; /* +0x20 : PAVFrame */
     uint32_t pkt; /* +0x24 : PAVPacket */
     uint32_t start; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad191_2C[0x30 - 0x2C];
     uint32_t next_dts; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad192_34[0x38 - 0x34];
     uint32_t dts; /* +0x38 : Int64 */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad193_3C[0x40 - 0x3C];
     uint32_t next_pts; /* +0x40 : Int64 */
-    uint8_t _pad_44[0x48 - 0x44];
+    uint8_t _pad194_44[0x48 - 0x44];
     uint32_t pts; /* +0x48 : Int64 */
-    uint8_t _pad_4C[0x50 - 0x4C];
+    uint8_t _pad195_4C[0x50 - 0x4C];
     uint32_t wrap_correction_done; /* +0x50 : Integer */
-    uint8_t _pad_54[0x58 - 0x54];
+    uint8_t _pad196_54[0x58 - 0x54];
     uint32_t filter_in_rescale_delta_last; /* +0x58 : Int64 */
-    uint8_t _pad_5C[0x60 - 0x5C];
+    uint8_t _pad197_5C[0x60 - 0x5C];
     uint32_t min_pts; /* +0x60 : Int64 */
-    uint8_t _pad_64[0x68 - 0x64];
+    uint8_t _pad198_64[0x68 - 0x64];
     uint32_t max_pts; /* +0x68 : Int64 */
-    uint8_t _pad_6C[0x70 - 0x6C];
+    uint8_t _pad199_6C[0x70 - 0x6C];
     uint32_t cfr_next_pts; /* +0x70 : Int64 */
-    uint8_t _pad_74[0x78 - 0x74];
+    uint8_t _pad200_74[0x78 - 0x74];
     uint32_t nb_samples; /* +0x78 : Int64 */
-    uint8_t _pad_7C[0x80 - 0x7C];
-    float ts_scale; /* +0x80 : Float:Double */
+    uint8_t _pad201_7C[0x80 - 0x7C];
+    double ts_scale; /* +0x80 : Float:Double */
     uint32_t saw_first_ts; /* +0x88 : Integer */
     uint32_t decoder_opts; /* +0x8C : PAVDictionary */
     uint32_t framerate; /* +0x90 : record TAVRational */
-    uint8_t _pad_94[0x98 - 0x94];
+    uint8_t _pad202_94[0x98 - 0x94];
     uint32_t top_field_first; /* +0x98 : Integer */
     uint32_t guess_layout_max; /* +0x9C : Integer */
     uint32_t autorotate; /* +0xA0 : Integer */
     uint32_t fix_sub_duration; /* +0xA4 : Integer */
     uint32_t prev_sub; /* +0xA8 : record TISprev_sub */
-    uint8_t _pad_AC[0xD0 - 0xAC];
+    uint8_t _pad203_AC[0xD0 - 0xAC];
     uint32_t sub2video; /* +0xD0 : record TISsub2video */
-    uint8_t _pad_D4[0xF8 - 0xD4];
+    uint8_t _pad204_D4[0xF8 - 0xD4];
     uint32_t dr1; /* +0xF8 : Integer */
     uint32_t filters; /* +0xFC : PPInputFilter */
     uint32_t nb_filters; /* +0x100 : Integer */
@@ -2541,99 +2517,99 @@ typedef struct TInputStreamS {
     uint32_t hwaccel_pix_fmt; /* +0x128 : None */
     uint32_t hwaccel_retrieved_pix_fmt; /* +0x12C : None */
     uint32_t hw_frames_ctx; /* +0x130 : PAVBufferRef */
-    uint8_t _pad_134[0x138 - 0x134];
+    uint8_t _pad205_134[0x138 - 0x134];
     uint32_t data_size; /* +0x138 : Int64 */
-    uint8_t _pad_13C[0x140 - 0x13C];
+    uint8_t _pad206_13C[0x140 - 0x13C];
     uint32_t nb_packets; /* +0x140 : Int64 */
-    uint8_t _pad_144[0x148 - 0x144];
+    uint8_t _pad207_144[0x148 - 0x144];
     uint32_t frames_decoded; /* +0x148 : Int64 */
-    uint8_t _pad_14C[0x150 - 0x14C];
+    uint8_t _pad208_14C[0x150 - 0x14C];
     uint32_t samples_decoded; /* +0x150 : Int64 */
-    uint8_t _pad_154[0x158 - 0x154];
+    uint8_t _pad209_154[0x158 - 0x154];
     uint32_t dts_buffer; /* +0x158 : PInt64 */
     uint32_t nb_dts_buffer; /* +0x15C : Integer */
     uint32_t got_output; /* +0x160 : Integer */
     uint32_t hw_device_ctx; /* +0x164 : PPAVBufferRef */
     uint32_t qsv_device; /* +0x168 : PPAnsiChar */
     uint32_t frame_number; /* +0x16C : Integer */
-} TInputStreamS;
+} TInputStreamRecS;
 
 /* TInputValues - 32 bytes */
-typedef struct TInputValuesS {
-    float angle; /* +0x0 : Float:Double */
-    float bend; /* +0x8 : Float:Double */
+typedef struct TInputValuesRecS {
+    double angle; /* +0x0 : Float:Double */
+    double bend; /* +0x8 : Float:Double */
     float length; /* +0x10 : Float:Single */
     float Thickness; /* +0x14 : Float:Single */
     uint32_t order; /* +0x18 : Integer */
     uint8_t _tail[4];
-} TInputValuesS;
+} TInputValuesRecS;
 
 /* TInterfaceEntry - 28 bytes */
-typedef struct TInterfaceEntryS {
+typedef struct TInterfaceEntryRecS {
     uint32_t IID; /* +0x0 : record TGUID */
-    uint8_t _pad_4[0x10 - 0x4];
+    uint8_t _pad210_4[0x10 - 0x4];
     uint32_t VTable; /* +0x10 : Pointer */
     uint32_t IOffset; /* +0x14 : Integer */
     uint32_t ImplGetter; /* +0x18 : Integer */
-} TInterfaceEntryS;
+} TInterfaceEntryRecS;
 
 /* TInternalEraInfoRecord - 8 bytes */
-typedef struct TInternalEraInfoRecordS {
+typedef struct TInternalEraInfoRecordRecS {
     uint32_t EraCount; /* +0x0 : Integer */
     PkDynArray EraInfo; /* +0x4 : TArray<TFormatSettings.TEraInfo> */
-} TInternalEraInfoRecordS;
+} TInternalEraInfoRecordRecS;
 
 /* TIntfMethodEntry - 256 bytes */
-typedef struct TIntfMethodEntryS {
+typedef struct TIntfMethodEntryRecS {
     uint32_t Name; /* +0x0 : TSymbolName */
     uint8_t _tail[252];
-} TIntfMethodEntryS;
+} TIntfMethodEntryRecS;
 
 /* TIntfMethodEntryTail - 3 bytes */
-typedef struct TIntfMethodEntryTailS {
-    uint32_t Kind; /* +0x0 : Integer */
-    uint32_t CC; /* +0x1 : TCallConv */
-    uint32_t ParamCount; /* +0x2 : Integer */
-} TIntfMethodEntryTailS;
+typedef struct TIntfMethodEntryTailRecS {
+    uint8_t Kind; /* +0x0 : Integer */
+    uint8_t CC; /* +0x1 : TCallConv */
+    uint8_t ParamCount; /* +0x2 : Integer */
+} TIntfMethodEntryTailRecS;
 
 /* TIntfMethodTable - 4 bytes */
-typedef struct TIntfMethodTableS {
-    uint32_t Count; /* +0x0 : Integer */
-    uint32_t RttiCount; /* +0x2 : Integer */
-} TIntfMethodTableS;
+typedef struct TIntfMethodTableRecS {
+    uint16_t Count; /* +0x0 : Integer */
+    uint16_t RttiCount; /* +0x2 : Integer */
+} TIntfMethodTableRecS;
 
 /* TISprev_sub - 40 bytes */
-typedef struct TISprev_subS {
+typedef struct TISprev_subRecS {
     uint32_t got_output; /* +0x0 : Integer */
     uint32_t ret; /* +0x4 : Integer */
     uint32_t subtitle; /* +0x8 : record TAVSubtitle */
     uint8_t _tail[28];
-} TISprev_subS;
+} TISprev_subRecS;
 
 /* TISsub2video - 40 bytes */
-typedef struct TISsub2videoS {
+typedef struct TISsub2videoRecS {
     uint32_t last_pts; /* +0x0 : Int64 */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad211_4[0x8 - 0x4];
     uint32_t end_pts; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad212_C[0x10 - 0xC];
     uint32_t sub_queue; /* +0x10 : PAVFifoBuffer */
     uint32_t frame; /* +0x14 : PAVFrame */
     uint32_t w; /* +0x18 : Integer */
     uint32_t h; /* +0x1C : Integer */
     uint32_t initialize; /* +0x20 : Integer */
     uint8_t _tail[4];
-} TISsub2videoS;
+} TISsub2videoRecS;
 
 /* TLangRec - 16 bytes */
-typedef struct TLangRecS {
+typedef struct TLangRecRecS {
     uint32_t FName; /* +0x0 : string */
     uint32_t FLCID; /* +0x4 : Integer */
     uint32_t FExt; /* +0x8 : string */
     uint32_t FLocaleName; /* +0xC : string */
-} TLangRecS;
+} TLangRecRecS;
 
 /* TLibModule - 28 bytes */
-typedef struct TLibModuleS {
+typedef struct TLibModuleRecS {
     uint32_t Next; /* +0x0 : PLibModule */
     uint32_t Instance; /* +0x4 : Integer */
     uint32_t CodeInstance; /* +0x8 : Integer */
@@ -2641,76 +2617,68 @@ typedef struct TLibModuleS {
     uint32_t ResInstance; /* +0x10 : Integer */
     uint32_t TypeInfo; /* +0x14 : PPackageTypeInfo */
     uint32_t Reserved; /* +0x18 : Integer */
-} TLibModuleS;
+} TLibModuleRecS;
 
 /* TLibraryStatus - 16 bytes */
-typedef struct TLibraryStatusS {
+typedef struct TLibraryStatusRecS {
     uint32_t Lib; /* +0x0 : TLibrary */
     uint32_t Name; /* +0x4 : TPathFileName */
     uint32_t Handle; /* +0x8 : Integer */
     uint8_t Fixuped; /* +0xC : Boolean */
     uint8_t _tail[3];
-} TLibraryStatusS;
+} TLibraryStatusRecS;
 
 /* TLicKey - 30 bytes */
-typedef struct TLicKeyS {
-    uint32_t KV; /* +0x0 : Integer */
-    uint32_t R1; /* +0x1 : Integer */
-    uint32_t PL; /* +0x2 : Integer */
-    uint32_t R2; /* +0x3 : Integer */
-    uint32_t PV; /* +0x4 : Integer */
-    uint32_t N1; /* +0x5 : Integer */
-    uint32_t PF; /* +0x6 : Integer */
-    uint32_t N2; /* +0x7 : Integer */
-    uint32_t C1; /* +0x8 : Integer */
-    uint32_t S0; /* +0xA : Integer */
-    uint32_t S1; /* +0xB : Integer */
-    uint32_t S2; /* +0xC : Integer */
-    uint32_t XX; /* +0xD : Integer */
-    uint32_t C2; /* +0xE : Integer */
-    uint32_t S3; /* +0x10 : Integer */
-    uint32_t S4; /* +0x11 : Integer */
-    uint32_t X1; /* +0x12 : Integer */
-    uint32_t X2; /* +0x13 : Integer */
-    uint32_t X3; /* +0x14 : Integer */
-    uint32_t X4; /* +0x15 : Integer */
-    uint32_t H1; /* +0x16 : Integer */
-    uint32_t H2; /* +0x18 : Integer */
+typedef struct TLicKeyRecS {
+    uint8_t KV; /* +0x0 : Integer */
+    uint8_t R1; /* +0x1 : Integer */
+    uint8_t PL; /* +0x2 : Integer */
+    uint8_t R2; /* +0x3 : Integer */
+    uint8_t PV; /* +0x4 : Integer */
+    uint8_t N1; /* +0x5 : Integer */
+    uint8_t PF; /* +0x6 : Integer */
+    uint8_t N2; /* +0x7 : Integer */
+    uint16_t C1; /* +0x8 : Integer */
+    uint8_t S0; /* +0xA : Integer */
+    uint8_t S1; /* +0xB : Integer */
+    uint8_t S2; /* +0xC : Integer */
+    uint8_t XX; /* +0xD : Integer */
+    uint16_t C2; /* +0xE : Integer */
+    uint8_t S3; /* +0x10 : Integer */
+    uint8_t S4; /* +0x11 : Integer */
+    uint8_t X1; /* +0x12 : Integer */
+    uint8_t X2; /* +0x13 : Integer */
+    uint8_t X3; /* +0x14 : Integer */
+    uint8_t X4; /* +0x15 : Integer */
+    uint16_t H1; /* +0x16 : Integer */
+    uint16_t H2; /* +0x18 : Integer */
     uint32_t FC; /* +0x1A : Integer */
-    uint32_t Field0; /* +0x0 : Integer */
-    uint32_t Field1; /* +0x2 : Integer */
-    uint32_t Field2; /* +0x6 : Integer */
-    uint32_t Field3; /* +0xA : Integer */
-    uint32_t Field4; /* +0xE : Integer */
-    uint32_t Field5; /* +0x12 : Integer */
-    uint32_t Field6; /* +0x16 : Integer */
-    uint32_t Field7; /* +0x1A : Integer */
-} TLicKeyS;
+} TLicKeyRecS;
 
 /* TLightDescription - 44 bytes */
-typedef struct TLightDescriptionS {
+typedef struct TLightDescriptionRecS {
     uint8_t Enabled; /* +0x0 : Boolean */
-    uint8_t _pad_1[0x4 - 0x1];
+    uint8_t _pad213_1[0x4 - 0x1];
     uint32_t Color; /* +0x4 : Integer */
     uint32_t LightType; /* +0x8 : TLightType */
     float SpotCutOff; /* +0xC : Float:Single */
     float SpotExponent; /* +0x10 : Float:Single */
     uint32_t Position; /* +0x14 : record TPoint3D */
-    uint8_t _pad_18[0x20 - 0x18];
+    uint8_t _pad214_18[0x20 - 0x18];
     uint32_t Direction; /* +0x20 : record TPoint3D */
     uint8_t _tail[8];
-} TLightDescriptionS;
+} TLightDescriptionRecS;
 
 /* TLineMetric - 8 bytes */
-typedef struct TLineMetricS {
+typedef struct TLineMetricRecS {
     uint32_t Index; /* +0x0 : Integer */
     uint32_t Len; /* +0x4 : Integer */
-} TLineMetricS;
+} TLineMetricRecS;
 
 /* TLogItem - 2344 bytes */
-typedef struct TLogItemS {
+typedef struct TLogItemRecS {
     float LogTime; /* +0x0 : Float:TDateTime */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad215_4[0x8 - 0x4];
     uint32_t LogType; /* +0x8 : TLogType */
     uint32_t Reporter; /* +0xC : Pointer */
     uint32_t ThreadID; /* +0x10 : Integer */
@@ -2719,21 +2687,20 @@ typedef struct TLogItemS {
     uint32_t ExtraMsg; /* +0x1C : PAnsiChar */
     uint32_t ExtraSize; /* +0x20 : Integer */
     uint32_t LogMsg; /* +0x24 : None */
-    uint8_t _pad_28[0x824 - 0x28];
+    uint8_t _pad216_28[0x824 - 0x28];
     uint32_t ReporterInfo; /* +0x824 : None */
     uint8_t _tail[256];
-} TLogItemS;
+} TLogItemRecS;
 
 /* TManagedField - 8 bytes */
-typedef struct TManagedFieldS {
+typedef struct TManagedFieldRecS {
     uint32_t TypeRef; /* +0x0 : PPTypeInfo */
     uint32_t FldOffset; /* +0x4 : Integer */
-} TManagedFieldS;
+} TManagedFieldRecS;
 
 /* TMatrix - 36 bytes */
-typedef struct TMatrixS {
+typedef struct TMatrixRecS {
     uint32_t M; /* +0x0 : TMatrixArray */
-    float m11; /* +0x0 : Float:Single */
     float m12; /* +0x4 : Float:Single */
     float m13; /* +0x8 : Float:Single */
     float m21; /* +0xC : Float:Single */
@@ -2742,12 +2709,11 @@ typedef struct TMatrixS {
     float m31; /* +0x18 : Float:Single */
     float m32; /* +0x1C : Float:Single */
     float m33; /* +0x20 : Float:Single */
-} TMatrixS;
+} TMatrixRecS;
 
 /* TMatrix3D - 64 bytes */
-typedef struct TMatrix3DS {
+typedef struct TMatrix3DRecS {
     uint32_t M; /* +0x0 : TMatrix3DType */
-    float m11; /* +0x0 : Float:Single */
     float m12; /* +0x4 : Float:Single */
     float m13; /* +0x8 : Float:Single */
     float m14; /* +0xC : Float:Single */
@@ -2763,10 +2729,10 @@ typedef struct TMatrix3DS {
     float m42; /* +0x34 : Float:Single */
     float m43; /* +0x38 : Float:Single */
     float m44; /* +0x3C : Float:Single */
-} TMatrix3DS;
+} TMatrix3DRecS;
 
 /* TMeshVertex - 32 bytes */
-typedef struct TMeshVertexS {
+typedef struct TMeshVertexRecS {
     float x; /* +0x0 : Float:Single */
     float y; /* +0x4 : Float:Single */
     float z; /* +0x8 : Float:Single */
@@ -2775,95 +2741,85 @@ typedef struct TMeshVertexS {
     float nz; /* +0x14 : Float:Single */
     float tu; /* +0x18 : Float:Single */
     float tv; /* +0x1C : Float:Single */
-} TMeshVertexS;
+} TMeshVertexRecS;
 
 /* TMessage - 16 bytes */
-typedef struct TMessageS {
+typedef struct TMessageRecS {
     uint32_t Msg; /* +0x0 : Integer */
     uint32_t WParam; /* +0x4 : Integer */
     uint32_t LParam; /* +0x8 : Integer */
     uint32_t Result; /* +0xC : Integer */
-    uint32_t WParamLo; /* +0x4 : Integer */
-    uint32_t WParamHi; /* +0x6 : Integer */
-    uint32_t WParamFiller; /* +0x8 : record TDWordFiller */
-    uint32_t LParamLo; /* +0x8 : Integer */
-    uint32_t LParamHi; /* +0xA : Integer */
-    uint32_t LParamFiller; /* +0xC : record TDWordFiller */
-    uint32_t ResultLo; /* +0xC : Integer */
-    uint32_t ResultHi; /* +0xE : Integer */
-} TMessageS;
+} TMessageRecS;
 
 /* TMethod - 8 bytes */
-typedef struct TMethodS {
+typedef struct TMethodRecS {
     uint32_t Code; /* +0x0 : Pointer */
     uint32_t Data; /* +0x4 : Pointer */
-} TMethodS;
+} TMethodRecS;
 
 /* TModuleInfo - 8 bytes */
-typedef struct TModuleInfoS {
+typedef struct TModuleInfoRecS {
     uint8_t Validated; /* +0x0 : Boolean */
-    uint8_t _pad_1[0x4 - 0x1];
+    uint8_t _pad217_1[0x4 - 0x1];
     PkDynArray UnitHashArray; /* +0x4 : DynArray:TArray<System.SysUtils.TUnitHashEntry> */
-} TModuleInfoS;
+} TModuleInfoRecS;
 
 /* TNewLocationRec - 16 bytes */
-typedef struct TNewLocationRecS {
+typedef struct TNewLocationRecRecS {
     uint32_t ControlItem; /* +0x0 : class TGridPanelLayout.TControlItem */
     uint32_t NewColumn; /* +0x4 : Integer */
     uint32_t NewRow; /* +0x8 : Integer */
     uint8_t Pushed; /* +0xC : Boolean */
     uint8_t _tail[3];
-} TNewLocationRecS;
+} TNewLocationRecRecS;
 
 /* TObjectAtPointInfo - 12 bytes */
-typedef struct TObjectAtPointInfoS {
-    uint32_t Point; /* +0x0 : record TPointF */
+typedef struct TObjectAtPointInfoRecS {
+    PkPoint Point; /* +0x0 : record TPointF */
     uint32_t Control; /* +0x8 : IControl */
-} TObjectAtPointInfoS;
+} TObjectAtPointInfoRecS;
 
 /* TObjectRef - 4 bytes */
-typedef struct TObjectRefS {
-    uint32_t Idx; /* +0x0 : Integer */
-    uint32_t Kind; /* +0x2 : TObjectKind */
-} TObjectRefS;
+typedef struct TObjectRefRecS {
+    uint16_t Idx; /* +0x0 : Integer */
+    uint16_t Kind; /* +0x2 : TObjectKind */
+} TObjectRefRecS;
 
 /* TObjInfo - 20 bytes */
-typedef struct TObjInfoS {
+typedef struct TObjInfoRecS {
     uint32_t Level; /* +0x0 : Integer */
     uint32_t Index; /* +0x4 : Integer */
     uint8_t Initiated; /* +0x8 : Boolean */
-    uint8_t _pad_9[0xC - 0x9];
+    uint8_t _pad218_9[0xC - 0x9];
     uint32_t ActionClient; /* +0xC : IActionClient */
     uint32_t Obj; /* +0x10 : class TObject */
-} TObjInfoS;
+} TObjInfoRecS;
 
 /* TOption - 12 bytes */
-typedef struct TOptionS {
+typedef struct TOptionRecS {
     uint32_t opt; /* +0x0 : POptionDef */
     uint32_t key; /* +0x4 : PAnsiChar */
     uint32_t val; /* +0x8 : PAnsiChar */
-} TOptionS;
+} TOptionRecS;
 
 /* TOptionDef - 24 bytes */
-typedef struct TOptionDefS {
+typedef struct TOptionDefRecS {
     uint32_t name; /* +0x0 : PAnsiChar */
     uint32_t flags; /* +0x4 : Integer */
     uint32_t u; /* +0x8 : record TOptionDefUnion */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad219_C[0x10 - 0xC];
     uint32_t help; /* +0x10 : PAnsiChar */
     uint32_t argname; /* +0x14 : PAnsiChar */
-} TOptionDefS;
+} TOptionDefRecS;
 
 /* TOptionDefUnion - 8 bytes */
-typedef struct TOptionDefUnionS {
+typedef struct TOptionDefUnionRecS {
     uint32_t dst_ptr; /* +0x0 : Pointer */
-    uint32_t func_arg; /* +0x0 : Tfunc_arg */
-    uint32_t off; /* +0x0 : Integer */
     uint8_t _tail[4];
-} TOptionDefUnionS;
+} TOptionDefUnionRecS;
 
 /* TOptionGroup - 28 bytes */
-typedef struct TOptionGroupS {
+typedef struct TOptionGroupRecS {
     uint32_t opts; /* +0x0 : POption */
     uint32_t nb_opts; /* +0x4 : Integer */
     uint32_t codec_opts; /* +0x8 : PAVDictionary */
@@ -2871,18 +2827,18 @@ typedef struct TOptionGroupS {
     uint32_t resample_opts; /* +0x10 : PAVDictionary */
     uint32_t sws_dict; /* +0x14 : PAVDictionary */
     uint32_t swr_opts; /* +0x18 : PAVDictionary */
-} TOptionGroupS;
+} TOptionGroupRecS;
 
 /* TOptionParseContext - 56 bytes */
-typedef struct TOptionParseContextS {
+typedef struct TOptionParseContextRecS {
     uint32_t global_opts; /* +0x0 : record TOptionGroup */
-    uint8_t _pad_4[0x1C - 0x4];
+    uint8_t _pad220_4[0x1C - 0x4];
     uint32_t file_opts; /* +0x1C : record TOptionGroup */
     uint8_t _tail[24];
-} TOptionParseContextS;
+} TOptionParseContextRecS;
 
 /* TOUCHINPUT - 40 bytes */
-typedef struct TOUCHINPUTS {
+typedef struct TOUCHINPUTRecS {
     uint32_t x; /* +0x0 : Integer */
     uint32_t y; /* +0x4 : Integer */
     uint32_t hSource; /* +0x8 : Integer */
@@ -2893,26 +2849,26 @@ typedef struct TOUCHINPUTS {
     uint32_t dwExtraInfo; /* +0x1C : Integer */
     uint32_t cxContact; /* +0x20 : Integer */
     uint32_t cyContact; /* +0x24 : Integer */
-} TOUCHINPUTS;
+} TOUCHINPUTRecS;
 
 /* TOutputFile - 48 bytes */
-typedef struct TOutputFileS {
+typedef struct TOutputFileRecS {
     uint32_t ctx; /* +0x0 : PAVFormatContext */
     uint32_t opts; /* +0x4 : PAVDictionary */
     uint32_t ost_index; /* +0x8 : Integer */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad221_C[0x10 - 0xC];
     uint32_t recording_time; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad222_14[0x18 - 0x14];
     uint32_t start_time; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad223_1C[0x20 - 0x1C];
     uint32_t limit_filesize; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad224_24[0x28 - 0x24];
     uint32_t shortest; /* +0x28 : Integer */
     uint32_t header_written; /* +0x2C : Integer */
-} TOutputFileS;
+} TOutputFileRecS;
 
 /* TOutputFilter - 72 bytes */
-typedef struct TOutputFilterS {
+typedef struct TOutputFilterRecS {
     uint32_t filter; /* +0x0 : PAVFilterContext */
     uint32_t ost; /* +0x4 : POutputStream */
     uint32_t graph; /* +0x8 : PFilterGraph */
@@ -2922,19 +2878,19 @@ typedef struct TOutputFilterS {
     uint32_t width; /* +0x18 : Integer */
     uint32_t height; /* +0x1C : Integer */
     uint32_t frame_rate; /* +0x20 : record TAVRational */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad225_24[0x28 - 0x24];
     uint32_t format; /* +0x28 : Integer */
     uint32_t sample_rate; /* +0x2C : Integer */
     uint32_t channel_layout; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad226_34[0x38 - 0x34];
     uint32_t formats; /* +0x38 : PInteger */
     uint32_t channel_layouts; /* +0x3C : PInt64 */
     uint32_t sample_rates; /* +0x40 : PInteger */
     uint8_t _tail[4];
-} TOutputFilterS;
+} TOutputFilterRecS;
 
 /* TOutputOptions - 32 bytes */
-typedef struct TOutputOptionsS {
+typedef struct TOutputOptionsRecS {
     uint32_t FileName; /* +0x0 : TPathFileName */
     uint32_t Options; /* +0x4 : AnsiString */
     uint32_t Presets; /* +0x8 : AnsiString */
@@ -2945,13 +2901,13 @@ typedef struct TOutputOptionsS {
     uint32_t VideoHookBitsPixel; /* +0x10 : Integer */
     uint8_t FrameInputHook; /* +0x14 : Boolean */
     uint8_t FrameOutputHook; /* +0x15 : Boolean */
-    uint8_t _pad_16[0x18 - 0x16];
+    uint8_t _pad227_16[0x18 - 0x16];
     uint32_t Tag; /* +0x18 : Integer */
     uint32_t Data; /* +0x1C : Pointer */
-} TOutputOptionsS;
+} TOutputOptionsRecS;
 
 /* TOutputStream - 456 bytes */
-typedef struct TOutputStreamS {
+typedef struct TOutputStreamRecS {
     uint32_t file_index; /* +0x0 : Integer */
     uint32_t index; /* +0x4 : Integer */
     uint32_t source_index; /* +0x8 : Integer */
@@ -2959,53 +2915,53 @@ typedef struct TOutputStreamS {
     uint32_t encoding_needed; /* +0x10 : Integer */
     uint32_t frame_number; /* +0x14 : Integer */
     uint32_t sync_ist; /* +0x18 : PInputStream */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad228_1C[0x20 - 0x1C];
     uint32_t sync_opts; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad229_24[0x28 - 0x24];
     uint32_t first_pts; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad230_2C[0x30 - 0x2C];
     uint32_t last_mux_dts; /* +0x30 : Int64 */
-    uint8_t _pad_34[0x38 - 0x34];
+    uint8_t _pad231_34[0x38 - 0x34];
     uint32_t mux_timebase; /* +0x38 : record TAVRational */
-    uint8_t _pad_3C[0x40 - 0x3C];
+    uint8_t _pad232_3C[0x40 - 0x3C];
     uint32_t enc_timebase; /* +0x40 : record TAVRational */
-    uint8_t _pad_44[0x48 - 0x44];
+    uint8_t _pad233_44[0x48 - 0x44];
     uint32_t bsf_ctx; /* +0x48 : PAVBSFContext */
     uint32_t enc_ctx; /* +0x4C : PAVCodecContext */
     uint32_t ref_par; /* +0x50 : PAVCodecParameters */
     uint32_t enc; /* +0x54 : PAVCodec */
     uint32_t max_frames; /* +0x58 : Int64 */
-    uint8_t _pad_5C[0x60 - 0x5C];
+    uint8_t _pad234_5C[0x60 - 0x5C];
     uint32_t filtered_frame; /* +0x60 : PAVFrame */
     uint32_t last_frame; /* +0x64 : PAVFrame */
     uint32_t pkt; /* +0x68 : PAVPacket */
     uint32_t last_dropped; /* +0x6C : Integer */
     uint32_t last_nb0_frames; /* +0x70 : None */
-    uint8_t _pad_74[0x7C - 0x74];
+    uint8_t _pad235_74[0x7C - 0x74];
     uint32_t hwaccel_ctx; /* +0x7C : Pointer */
     uint32_t frame_rate; /* +0x80 : record TAVRational */
-    uint8_t _pad_84[0x88 - 0x84];
+    uint8_t _pad236_84[0x88 - 0x84];
     uint32_t max_frame_rate; /* +0x88 : record TAVRational */
-    uint8_t _pad_8C[0x90 - 0x8C];
+    uint8_t _pad237_8C[0x90 - 0x8C];
     uint32_t is_cfr; /* +0x90 : Integer */
     uint32_t force_fps; /* +0x94 : Integer */
     uint32_t top_field_first; /* +0x98 : Integer */
     uint32_t rotate_overridden; /* +0x9C : Integer */
     uint32_t autoscale; /* +0xA0 : Integer */
-    uint8_t _pad_A4[0xA8 - 0xA4];
-    float rotate_override_value; /* +0xA8 : Float:Double */
+    uint8_t _pad238_A4[0xA8 - 0xA4];
+    double rotate_override_value; /* +0xA8 : Float:Double */
     uint32_t frame_aspect_ratio; /* +0xB0 : record TAVRational */
-    uint8_t _pad_B4[0xB8 - 0xB4];
+    uint8_t _pad239_B4[0xB8 - 0xB4];
     uint32_t forced_kf_ref_pts; /* +0xB8 : Int64 */
-    uint8_t _pad_BC[0xC0 - 0xBC];
+    uint8_t _pad240_BC[0xC0 - 0xBC];
     uint32_t forced_kf_pts; /* +0xC0 : PInt64 */
     uint32_t forced_kf_count; /* +0xC4 : Integer */
     uint32_t forced_kf_index; /* +0xC8 : Integer */
     uint32_t forced_keyframes; /* +0xCC : PAnsiChar */
     uint32_t forced_keyframes_pexpr; /* +0xD0 : PAVExpr */
-    uint8_t _pad_D4[0xD8 - 0xD4];
+    uint8_t _pad241_D4[0xD8 - 0xD4];
     uint32_t forced_keyframes_expr_const_values; /* +0xD8 : None */
-    uint8_t _pad_DC[0x108 - 0xDC];
+    uint8_t _pad242_DC[0x108 - 0xDC];
     uint32_t audio_channels_map; /* +0x108 : PInteger */
     uint32_t audio_channels_mapped; /* +0x10C : Integer */
     uint32_t logfile_prefix; /* +0x110 : PAnsiChar */
@@ -3029,137 +2985,134 @@ typedef struct TOutputStreamS {
     uint32_t copy_prior_start; /* +0x158 : Integer */
     uint32_t disposition; /* +0x15C : PAnsiChar */
     uint32_t keep_pix_fmt; /* +0x160 : Integer */
-    uint8_t _pad_164[0x168 - 0x164];
+    uint8_t _pad243_164[0x168 - 0x164];
     uint32_t data_size; /* +0x168 : Int64 */
-    uint8_t _pad_16C[0x170 - 0x16C];
+    uint8_t _pad244_16C[0x170 - 0x16C];
     uint32_t packets_written; /* +0x170 : Int64 */
     uint8_t _tail[84];
-} TOutputStreamS;
+} TOutputStreamRecS;
 
 /* TPackageTypeInfo - 16 bytes */
-typedef struct TPackageTypeInfoS {
+typedef struct TPackageTypeInfoRecS {
     uint32_t TypeCount; /* +0x0 : Integer */
     uint32_t TypeTable; /* +0x4 : PTypeTable */
     uint32_t UnitCount; /* +0x8 : Integer */
     uint32_t UnitNames; /* +0xC : PShortString */
-} TPackageTypeInfoS;
+} TPackageTypeInfoRecS;
 
 /* TPathPoint - 12 bytes */
-typedef struct TPathPointS {
+typedef struct TPathPointRecS {
     uint32_t Kind; /* +0x0 : TPathPointKind */
-    uint32_t Point; /* +0x4 : record TPointF */
-} TPathPointS;
+    PkPoint Point; /* +0x4 : record TPointF */
+} TPathPointRecS;
 
 /* TPathRef - 12 bytes */
-typedef struct TPathRefS {
+typedef struct TPathRefRecS {
     uint32_t Index; /* +0x0 : Integer */
-    uint32_t Pos; /* +0x4 : record TPointF */
-} TPathRefS;
+    PkPoint Pos; /* +0x4 : record TPointF */
+} TPathRefRecS;
 
 /* TPathString - 12 bytes */
-typedef struct TPathStringS {
+typedef struct TPathStringRecS {
     uint32_t Value; /* +0x0 : string */
     uint32_t Pos; /* +0x4 : Integer */
-    uint32_t Token; /* +0x8 : Char */
+    uint16_t Token; /* +0x8 : Char */
     uint8_t Comma; /* +0xA : Boolean */
     uint8_t _tail[1];
-} TPathStringS;
+} TPathStringRecS;
 
 /* TPattern - 16 bytes */
-typedef struct TPatternS {
+typedef struct TPatternRecS {
     uint32_t Next; /* +0x0 : PPattern */
     uint32_t Bitmap; /* +0x4 : class TBitmap */
     uint32_t BkColorRef; /* +0x8 : Integer */
     uint32_t FgColorRef; /* +0xC : Integer */
-} TPatternS;
+} TPatternRecS;
 
 /* TPenData - 16 bytes */
-typedef struct TPenDataS {
+typedef struct TPenDataRecS {
     uint32_t Handle; /* +0x0 : Integer */
     uint32_t Color; /* +0x4 : Integer */
     uint32_t Width; /* +0x8 : Integer */
     uint32_t Style; /* +0xC : TPenStyle */
-} TPenDataS;
+} TPenDataRecS;
 
 /* TPoint - 8 bytes */
-typedef struct TPointS {
+typedef struct TPointRecS {
     uint32_t X; /* +0x0 : Integer */
     uint32_t Y; /* +0x4 : Integer */
-} TPointS;
+} TPointRecS;
 
 /* TPoint3D - 12 bytes */
-typedef struct TPoint3DS {
+typedef struct TPoint3DRecS {
     uint32_t V; /* +0x0 : TPoint3D.TPoint3DArray */
-    float X; /* +0x0 : Float:Single */
     float Y; /* +0x4 : Float:Single */
     float Z; /* +0x8 : Float:Single */
-} TPoint3DS;
+} TPoint3DRecS;
 
 /* TPointD - 16 bytes */
-typedef struct TPointDS {
-    float X; /* +0x0 : Float:Double */
-    float Y; /* +0x8 : Float:Double */
-} TPointDS;
+typedef struct TPointDRecS {
+    double X; /* +0x0 : Float:Double */
+    double Y; /* +0x8 : Float:Double */
+} TPointDRecS;
 
 /* TPointF - 8 bytes */
-typedef struct TPointFS {
-    uint32_t V; /* +0x0 : TPointFType */
-    float X; /* +0x0 : Float:Single */
-    float Y; /* +0x4 : Float:Single */
-} TPointFS;
+typedef struct TPointFRecS {
+    PkPoint V; /* +0x0 : TPointFType */
+} TPointFRecS;
 
 /* TPopupForm - 12 bytes */
-typedef struct TPopupFormS {
+typedef struct TPopupFormRecS {
     uint32_t FormID; /* +0x0 : Integer */
     uint32_t Form; /* +0x4 : class TCustomForm */
     uint8_t WasPopup; /* +0x8 : Boolean */
     uint8_t _tail[3];
-} TPopupFormS;
+} TPopupFormRecS;
 
 /* TPopupWnd - 8 bytes */
-typedef struct TPopupWndS {
+typedef struct TPopupWndRecS {
     uint32_t ID; /* +0x0 : Integer */
     uint32_t ControlWnd; /* +0x4 : Integer */
-} TPopupWndS;
+} TPopupWndRecS;
 
 /* TPostHookContext - 24 bytes */
-typedef struct TPostHookContextS {
+typedef struct TPostHookContextRecS {
     uint32_t Converter; /* +0x0 : class TFormatConverter */
     uint32_t Previewer; /* +0x4 : class TPreviewer */
     uint32_t preview_last_time; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad245_C[0x10 - 0xC];
     uint32_t preview_cur_time; /* +0x10 : Int64 */
     uint8_t _tail[4];
-} TPostHookContextS;
+} TPostHookContextRecS;
 
 /* TPreviewInfo - 24 bytes */
-typedef struct TPreviewInfoS {
+typedef struct TPreviewInfoRecS {
     uint32_t TaskIndex; /* +0x0 : Integer */
     uint32_t Bitmap; /* +0x4 : class TBitmap */
     uint32_t FrameNumber; /* +0x8 : Integer */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad246_C[0x10 - 0xC];
     uint32_t PTS; /* +0x10 : Int64 */
     uint8_t _tail[4];
-} TPreviewInfoS;
+} TPreviewInfoRecS;
 
 /* TProcedureParam - 261 bytes */
-typedef struct TProcedureParamS {
-    uint32_t Flags; /* +0x0 : Integer */
+typedef struct TProcedureParamRecS {
+    uint8_t Flags; /* +0x0 : Integer */
     uint32_t ParamType; /* +0x1 : PPTypeInfo */
     uint32_t Name; /* +0x5 : TSymbolName */
     uint8_t _tail[252];
-} TProcedureParamS;
+} TProcedureParamRecS;
 
 /* TProcedureSignature - 7 bytes */
-typedef struct TProcedureSignatureS {
-    uint32_t Flags; /* +0x0 : Integer */
-    uint32_t CC; /* +0x1 : TCallConv */
+typedef struct TProcedureSignatureRecS {
+    uint8_t Flags; /* +0x0 : Integer */
+    uint8_t CC; /* +0x1 : TCallConv */
     uint32_t ResultType; /* +0x2 : PPTypeInfo */
-    uint32_t ParamCount; /* +0x6 : Integer */
-} TProcedureSignatureS;
+    uint8_t ParamCount; /* +0x6 : Integer */
+} TProcedureSignatureRecS;
 
 /* TProgressInfo - 48 bytes */
-typedef struct TProgressInfoS {
+typedef struct TProgressInfoRecS {
     uint32_t TaskIndex; /* +0x0 : Integer */
     uint32_t FileIndex; /* +0x4 : Integer */
     uint32_t FrameNumber; /* +0x8 : Integer */
@@ -3167,92 +3120,86 @@ typedef struct TProgressInfoS {
     float Quality; /* +0x10 : Float:Single */
     float BitRate; /* +0x14 : Float:Single */
     uint32_t CurrentSize; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad247_1C[0x20 - 0x1C];
     uint32_t CurrentDuration; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad248_24[0x28 - 0x24];
     uint32_t TotalDuration; /* +0x28 : Int64 */
     uint8_t _tail[4];
-} TProgressInfoS;
+} TProgressInfoRecS;
 
 /* TPropData - 2 bytes */
-typedef struct TPropDataS {
-    uint32_t PropCount; /* +0x0 : Integer */
-} TPropDataS;
+typedef struct TPropDataRecS {
+    uint16_t PropCount; /* +0x0 : Integer */
+} TPropDataRecS;
 
 /* TPropInfo - 282 bytes */
-typedef struct TPropInfoS {
+typedef struct TPropInfoRecS {
     uint32_t PropType; /* +0x0 : PPTypeInfo */
     uint32_t GetProc; /* +0x4 : Pointer */
     uint32_t SetProc; /* +0x8 : Pointer */
     uint32_t StoredProc; /* +0xC : Pointer */
     uint32_t Index; /* +0x10 : Integer */
     uint32_t Default; /* +0x14 : Integer */
-    uint32_t NameIndex; /* +0x18 : Integer */
+    uint16_t NameIndex; /* +0x18 : Integer */
     uint32_t Name; /* +0x1A : TSymbolName */
     uint8_t _tail[252];
-} TPropInfoS;
+} TPropInfoRecS;
 
 /* TPropInfoEx - 7 bytes */
-typedef struct TPropInfoExS {
-    uint32_t Flags; /* +0x0 : Integer */
+typedef struct TPropInfoExRecS {
+    uint8_t Flags; /* +0x0 : Integer */
     uint32_t Info; /* +0x1 : PPropInfo */
-    uint32_t AttrData; /* +0x5 : record TAttrData */
-} TPropInfoExS;
+    uint16_t AttrData; /* +0x5 : record TAttrData */
+} TPropInfoExRecS;
 
 /* TRcOverride - 16 bytes */
-typedef struct TRcOverrideS {
+typedef struct TRcOverrideRecS {
     uint32_t start_frame; /* +0x0 : Integer */
     uint32_t end_frame; /* +0x4 : Integer */
     uint32_t qscale; /* +0x8 : Integer */
     float quality_factor; /* +0xC : Float:Single */
-} TRcOverrideS;
+} TRcOverrideRecS;
 
 /* TRecordTypeField - 265 bytes */
-typedef struct TRecordTypeFieldS {
+typedef struct TRecordTypeFieldRecS {
     uint32_t Field; /* +0x0 : record TManagedField */
-    uint8_t _pad_4[0x8 - 0x4];
-    uint32_t Flags; /* +0x8 : Integer */
+    uint8_t _pad249_4[0x8 - 0x4];
+    uint8_t Flags; /* +0x8 : Integer */
     uint32_t Name; /* +0x9 : TSymbolName */
     uint8_t _tail[252];
-} TRecordTypeFieldS;
+} TRecordTypeFieldRecS;
 
 /* TRect - 16 bytes */
-typedef struct TRectS {
+typedef struct TRectRecS {
     uint32_t Left; /* +0x0 : Integer */
     uint32_t Top; /* +0x4 : Integer */
     uint32_t Right; /* +0x8 : Integer */
     uint32_t Bottom; /* +0xC : Integer */
-    uint32_t TopLeft; /* +0x0 : record TPoint */
-    uint8_t _pad_4[0x8 - 0x4];
-    uint32_t BottomRight; /* +0x8 : record TPoint */
-    uint8_t _tail[4];
-} TRectS;
+} TRectRecS;
 
 /* TRectF - 16 bytes */
-typedef struct TRectFS {
+typedef struct TRectFRecS {
     float Left; /* +0x0 : Float:Single */
     float Top; /* +0x4 : Float:Single */
     float Right; /* +0x8 : Float:Single */
     float Bottom; /* +0xC : Float:Single */
-    uint32_t TopLeft; /* +0x0 : record TPointF */
-    uint32_t BottomRight; /* +0x8 : record TPointF */
-} TRectFS;
+} TRectFRecS;
 
 /* TRegDataInfo - 8 bytes */
-typedef struct TRegDataInfoS {
+typedef struct TRegDataInfoRecS {
     uint32_t RegData; /* +0x0 : TRegDataType */
     uint32_t DataSize; /* +0x4 : Integer */
-} TRegDataInfoS;
+} TRegDataInfoRecS;
 
 /* TRegisteredFlasher - 12 bytes */
-typedef struct TRegisteredFlasherS {
+typedef struct TRegisteredFlasherRecS {
     uint32_t FlasherClass; /* +0x0 : TFmxObjectClass */
     uint32_t Name; /* +0x4 : string */
     uint32_t Flasher; /* +0x8 : class TFmxObject */
-} TRegisteredFlasherS;
+} TRegisteredFlasherRecS;
 
 /* TRegKeyInfo - 28 bytes */
-typedef struct TRegKeyInfoS {
+typedef struct TRegKeyInfoRecS {
     uint32_t NumSubKeys; /* +0x0 : Integer */
     uint32_t MaxSubKeyLen; /* +0x4 : Integer */
     uint32_t NumValues; /* +0x8 : Integer */
@@ -3260,523 +3207,431 @@ typedef struct TRegKeyInfoS {
     uint32_t MaxDataLen; /* +0x10 : Integer */
     uint32_t FileTime; /* +0x14 : record _FILETIME */
     uint8_t _tail[4];
-} TRegKeyInfoS;
+} TRegKeyInfoRecS;
 
 /* TResData - 4 bytes */
-typedef struct TResDataS {
+typedef struct TResDataRecS {
     uint32_t Handle; /* +0x0 : Integer */
-} TResDataS;
+} TResDataRecS;
 
 /* TResource - 164 bytes */
-typedef struct TResourceS {
+typedef struct TResourceRecS {
     uint32_t Next; /* +0x0 : PResource */
     uint32_t RefCount; /* +0x4 : Integer */
     uint32_t Handle; /* +0x8 : Integer */
     uint32_t HashCode; /* +0xC : Integer */
     uint32_t Owner; /* +0x10 : Integer */
     uint32_t Data; /* +0x14 : record TResData */
-    uint32_t Font; /* +0x14 : record TFontData */
-    uint32_t Pen; /* +0x14 : record TPenData */
-    uint32_t Brush; /* +0x14 : record TBrushData */
     uint8_t _tail[140];
-} TResourceS;
+} TResourceRecS;
 
 /* TResourceEnumInfo - 8 bytes */
-typedef struct TResourceEnumInfoS {
+typedef struct TResourceEnumInfoRecS {
     uint32_t Name; /* +0x0 : string */
     uint32_t Instance; /* +0x4 : Integer */
-} TResourceEnumInfoS;
+} TResourceEnumInfoRecS;
 
 /* TResStringHashItem - 12 bytes */
-typedef struct TResStringHashItemS {
+typedef struct TResStringHashItemRecS {
     uint32_t Identifier; /* +0x0 : Integer */
     uint32_t Next; /* +0x4 : PResStringHashItem */
     uint32_t Value; /* +0x8 : string */
-} TResStringHashItemS;
+} TResStringHashItemRecS;
 
 /* TResStringRec - 8 bytes */
-typedef struct TResStringRecS {
+typedef struct TResStringRecRecS {
     uint32_t Module; /* +0x0 : None */
     uint32_t Identifier; /* +0x4 : Integer */
-} TResStringRecS;
+} TResStringRecRecS;
 
 /* TRGB - 3 bytes */
-typedef struct TRGBS {
-    uint32_t B; /* +0x0 : Integer */
-    uint32_t G; /* +0x1 : Integer */
-    uint32_t R; /* +0x2 : Integer */
-} TRGBS;
+typedef struct TRGBRecS {
+    uint8_t B; /* +0x0 : Integer */
+    uint8_t G; /* +0x1 : Integer */
+    uint8_t R; /* +0x2 : Integer */
+} TRGBRecS;
 
 /* TScaleName - 8 bytes */
-typedef struct TScaleNameS {
+typedef struct TScaleNameRecS {
     float Scale; /* +0x0 : Float:Single */
     uint32_t Name; /* +0x4 : string */
-} TScaleNameS;
+} TScaleNameRecS;
 
 /* TSearchRec - 624 bytes */
-typedef struct TSearchRecS {
+typedef struct TSearchRecRecS {
     uint32_t Time; /* +0x0 : Integer */
-    uint8_t _pad_4[0x8 - 0x4];
+    uint8_t _pad250_4[0x8 - 0x4];
     uint32_t Size; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad251_C[0x10 - 0xC];
     uint32_t Attr; /* +0x10 : Integer */
     uint32_t Name; /* +0x14 : TFileName */
     uint32_t ExcludeAttr; /* +0x18 : Integer */
     uint32_t FindHandle; /* +0x1C : Integer */
     uint32_t FindData; /* +0x20 : record _WIN32_FIND_DATAW */
     uint8_t _tail[588];
-} TSearchRecS;
+} TSearchRecRecS;
 
 /* TSegment - 48 bytes */
-typedef struct TSegmentS {
-    uint32_t Pivot; /* +0x0 : Integer */
-    uint32_t EndPoint; /* +0x2 : Integer */
+typedef struct TSegmentRecS {
+    uint16_t Pivot; /* +0x0 : Integer */
+    uint16_t EndPoint; /* +0x2 : Integer */
     float Len; /* +0x4 : Float:Single */
-    float Angle; /* +0x8 : Float:Double */
-    float Bend; /* +0x10 : Float:Double */
+    double Angle; /* +0x8 : Float:Double */
+    double Bend; /* +0x10 : Float:Double */
     float Thickness; /* +0x18 : Float:Single */
-    uint32_t Kind; /* +0x1C : TSegmentKind */
+    uint8_t Kind; /* +0x1C : TSegmentKind */
     uint8_t Static; /* +0x1D : Boolean */
-    uint8_t _pad_1E[0x20 - 0x1E];
+    uint8_t _pad252_1E[0x20 - 0x1E];
     uint32_t Color; /* +0x20 : Integer */
     uint32_t ColorGrad; /* +0x24 : Integer */
-    uint32_t Transparency; /* +0x28 : Integer */
-    uint32_t TransparencyGrad; /* +0x29 : Integer */
-    uint32_t DrawOrderIdx; /* +0x2A : Integer */
-    uint32_t ImageIndex; /* +0x2C : Integer */
+    uint8_t Transparency; /* +0x28 : Integer */
+    uint8_t TransparencyGrad; /* +0x29 : Integer */
+    uint16_t DrawOrderIdx; /* +0x2A : Integer */
+    uint16_t ImageIndex; /* +0x2C : Integer */
     uint8_t Backwards; /* +0x2E : Boolean */
     uint8_t Mirror; /* +0x2F : Boolean */
-} TSegmentS;
+} TSegmentRecS;
 
 /* TSize - 8 bytes */
-typedef struct TSizeS {
+typedef struct TSizeRecS {
     uint32_t cx; /* +0x0 : Integer */
     uint32_t cy; /* +0x4 : Integer */
-} TSizeS;
+} TSizeRecS;
 
 /* TSizeF - 8 bytes */
-typedef struct TSizeFS {
+typedef struct TSizeFRecS {
     float cx; /* +0x0 : Float:Single */
     float cy; /* +0x4 : Float:Single */
-} TSizeFS;
+} TSizeFRecS;
 
 /* TSmallPoint - 4 bytes */
-typedef struct TSmallPointS {
-    uint32_t x; /* +0x0 : Integer */
-    uint32_t y; /* +0x2 : Integer */
-} TSmallPointS;
+typedef struct TSmallPointRecS {
+    uint16_t x; /* +0x0 : Integer */
+    uint16_t y; /* +0x2 : Integer */
+} TSmallPointRecS;
 
 /* TStackRec - 8 bytes */
-typedef struct TStackRecS {
+typedef struct TStackRecRecS {
     uint32_t sP; /* +0x0 : PWideChar */
     uint32_t sI; /* +0x4 : Integer */
-} TStackRecS;
+} TStackRecRecS;
 
 /* TStandardGestureData - 16 bytes */
-typedef struct TStandardGestureDataS {
+typedef struct TStandardGestureDataRecS {
     PkDynArray Points; /* +0x0 : DynArray:TGesturePointArray */
-    uint32_t GestureID; /* +0x4 : Integer */
-    uint32_t Options; /* +0x6 : TGestureOptions */
+    uint16_t GestureID; /* +0x4 : Integer */
+    uint16_t Options; /* +0x6 : TGestureOptions */
     uint32_t Deviation; /* +0x8 : Integer */
     uint32_t ErrorMargin; /* +0xC : Integer */
-} TStandardGestureDataS;
+} TStandardGestureDataRecS;
 
 /* TStrData - 8 bytes */
-typedef struct TStrDataS {
+typedef struct TStrDataRecS {
     uint32_t Ident; /* +0x0 : Integer */
     uint32_t Str; /* +0x4 : string */
-} TStrDataS;
+} TStrDataRecS;
 
 /* TStringItem - 8 bytes */
-typedef struct TStringItemS {
+typedef struct TStringItemRecS {
     uint32_t FString; /* +0x0 : string */
     uint32_t FObject; /* +0x4 : class TObject */
-} TStringItemS;
+} TStringItemRecS;
 
 /* TStringRef - 12 bytes */
-typedef struct TStringRefS {
+typedef struct TStringRefRecS {
     uint32_t Wide; /* +0x0 : WideString */
     uint32_t Ansi; /* +0x4 : PAnsiString */
     uint32_t Unicode; /* +0x8 : PUnicodeString */
-} TStringRefS;
+} TStringRefRecS;
 
 /* TStyleTextOptions - 32 bytes */
-typedef struct TStyleTextOptionsS {
+typedef struct TStyleTextOptionsRecS {
     uint32_t Flags; /* +0x0 : TStyleTextFlags */
     uint32_t TextColor; /* +0x4 : Integer */
     uint32_t BorderColor; /* +0x8 : Integer */
     uint32_t BorderSize; /* +0xC : Integer */
     uint32_t ShadowColor; /* +0x10 : Integer */
     uint32_t ShadowOffset; /* +0x14 : record TPoint */
-    uint8_t _pad_18[0x1C - 0x18];
+    uint8_t _pad253_18[0x1C - 0x18];
     uint32_t GlowSize; /* +0x1C : Integer */
-} TStyleTextOptionsS;
+} TStyleTextOptionsRecS;
 
 /* TSubtitleStreamInfo - 12 bytes */
-typedef struct TSubtitleStreamInfoS {
+typedef struct TSubtitleStreamInfoRecS {
     uint32_t Language; /* +0x0 : string */
     uint32_t CodecName; /* +0x4 : string */
     uint32_t SubFormat; /* +0x8 : Integer */
-} TSubtitleStreamInfoS;
+} TSubtitleStreamInfoRecS;
 
 /* TTangentPair - 8 bytes */
-typedef struct TTangentPairS {
+typedef struct TTangentPairRecS {
     float I; /* +0x0 : Float:Single */
     float Ip1; /* +0x4 : Float:Single */
-} TTangentPairS;
+} TTangentPairRecS;
 
 /* TTerminateInfo - 12 bytes */
-typedef struct TTerminateInfoS {
+typedef struct TTerminateInfoRecS {
     uint32_t TaskIndex; /* +0x0 : Integer */
     uint8_t Finished; /* +0x4 : Boolean */
     uint8_t Exception; /* +0x5 : Boolean */
-    uint8_t _pad_6[0x8 - 0x6];
+    uint8_t _pad254_6[0x8 - 0x6];
     uint32_t ExceptionMsg; /* +0x8 : string */
-} TTerminateInfoS;
+} TTerminateInfoRecS;
 
 /* TTextAttribute - 8 bytes */
-typedef struct TTextAttributeS {
+typedef struct TTextAttributeRecS {
     uint32_t Font; /* +0x0 : class TFont */
     uint32_t Color; /* +0x4 : Integer */
-} TTextAttributeS;
+} TTextAttributeRecS;
 
 /* TTextRange - 8 bytes */
-typedef struct TTextRangeS {
+typedef struct TTextRangeRecS {
     uint32_t Pos; /* +0x0 : Integer */
     uint32_t Length; /* +0x4 : Integer */
-} TTextRangeS;
+} TTextRangeRecS;
 
 /* TThemedElementDetails - 12 bytes */
-typedef struct TThemedElementDetailsS {
+typedef struct TThemedElementDetailsRecS {
     uint32_t Element; /* +0x0 : TThemedElement */
     uint32_t Part; /* +0x4 : Integer */
     uint32_t State; /* +0x8 : Integer */
-} TThemedElementDetailsS;
+} TThemedElementDetailsRecS;
 
 /* TThreadInfo - 16 bytes */
-typedef struct TThreadInfoS {
+typedef struct TThreadInfoRecS {
     uint32_t Next; /* +0x0 : PThreadInfo */
     uint32_t ThreadID; /* +0x4 : Integer */
     uint32_t Active; /* +0x8 : Integer */
     uint32_t RecursionCount; /* +0xC : Integer */
-} TThreadInfoS;
+} TThreadInfoRecS;
 
 /* TTouch - 8 bytes */
-typedef struct TTouchS {
-    uint32_t Location; /* +0x0 : record TPointF */
-} TTouchS;
+typedef struct TTouchRecS {
+    PkPoint Location; /* +0x0 : record TPointF */
+} TTouchRecS;
 
 /* TTriggerInfo - 12 bytes */
-typedef struct TTriggerInfoS {
+typedef struct TTriggerInfoRecS {
     uint32_t Instance; /* +0x0 : class TFmxObject */
     uint32_t Trigger; /* +0x4 : string */
     uint8_t Wait; /* +0x8 : Boolean */
     uint8_t _tail[3];
-} TTriggerInfoS;
+} TTriggerInfoRecS;
 
 /* TTypeData - 1037 bytes */
-typedef struct TTypeDataS {
+typedef struct TTypeDataRecS {
     uint32_t AttrData; /* +0x0 : record TAttrData */
-    uint32_t CodePage; /* +0x0 : Integer */
-    uint32_t OrdType; /* +0x0 : TOrdType */
-    uint32_t MinValue; /* +0x1 : Integer */
+    uint8_t _pad255_4[0x5 - 0x4];
     uint32_t MaxValue; /* +0x5 : Integer */
     uint32_t BaseType; /* +0x9 : PPTypeInfo */
     uint32_t NameList; /* +0xD : TSymbolName */
-    uint32_t SetTypeOrSize; /* +0x0 : Integer */
-    uint32_t CompType; /* +0x1 : PPTypeInfo */
-    float FloatType; /* +0x0 : TFloatType */
-    uint32_t MaxLength; /* +0x0 : Integer */
-    uint32_t ClassType; /* +0x0 : TClass */
-    uint32_t ParentInfo; /* +0x4 : PPTypeInfo */
-    uint32_t PropCount; /* +0x8 : Integer */
-    uint32_t UnitName; /* +0xA : TSymbolName */
-    uint32_t MethodKind; /* +0x0 : TMethodKind */
-    uint32_t ParamCount; /* +0x1 : Integer */
-    uint32_t ParamList; /* +0x2 : None */
-    uint32_t ProcSig; /* +0x0 : PProcedureSignature */
-    uint32_t ProcAttrData; /* +0x4 : record TAttrData */
-    uint32_t IntfParent; /* +0x0 : PPTypeInfo */
-    uint32_t IntfFlags; /* +0x4 : TIntfFlagsBase */
-    uint32_t IntfGuid; /* +0x5 : None */
-    uint8_t _pad_9[0x15 - 0x9];
+    uint8_t _pad256_11[0x15 - 0x11];
     uint32_t IntfUnit; /* +0x15 : TSymbolName */
-    uint32_t MinInt64Value; /* +0x0 : Int64 */
-    uint8_t _pad_4[0x8 - 0x4];
-    uint32_t MaxInt64Value; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
-    uint32_t Int64AttrData; /* +0x10 : record TAttrData */
-    uint32_t elSize; /* +0x0 : Integer */
-    uint32_t elType; /* +0x4 : PPTypeInfo */
-    uint32_t varType; /* +0x8 : Integer */
-    uint32_t elType2; /* +0xC : PPTypeInfo */
-    uint32_t DynUnitName; /* +0x10 : TSymbolName */
-    uint32_t RecSize; /* +0x0 : Integer */
-    uint32_t ManagedFldCount; /* +0x4 : Integer */
-    uint32_t InstanceType; /* +0x0 : PPTypeInfo */
-    uint32_t ClassRefAttrData; /* +0x4 : record TAttrData */
-    uint32_t RefType; /* +0x0 : PPTypeInfo */
-    uint32_t PtrAttrData; /* +0x4 : record TAttrData */
-    PkDynArray ArrayData; /* +0x0 : record TArrayTypeData */
-    uint8_t _tail[1033];
-} TTypeDataS;
+    uint8_t _tail[1012];
+} TTypeDataRecS;
 
 /* TTypeInfo - 257 bytes */
-typedef struct TTypeInfoS {
-    uint32_t Kind; /* +0x0 : TTypeKind */
+typedef struct TTypeInfoRecS {
+    uint8_t Kind; /* +0x0 : TTypeKind */
     uint32_t Name; /* +0x1 : TSymbolName */
     uint8_t _tail[252];
-} TTypeInfoS;
+} TTypeInfoRecS;
 
 /* TUnitHashEntry - 24 bytes */
-typedef struct TUnitHashEntryS {
+typedef struct TUnitHashEntryRecS {
     uint32_t Next; /* +0x0 : PUnitHashEntry */
     uint32_t Prev; /* +0x4 : PUnitHashEntry */
     uint32_t LibModule; /* +0x8 : PLibModule */
     uint32_t UnitName; /* +0xC : PAnsiChar */
     uint8_t DupsAllowed; /* +0x10 : Boolean */
-    uint8_t _pad_11[0x14 - 0x11];
+    uint8_t _pad257_11[0x14 - 0x11];
     uint32_t FullHash; /* +0x14 : Integer */
-} TUnitHashEntryS;
+} TUnitHashEntryRecS;
 
 /* TVarArray - 24 bytes */
-typedef struct TVarArrayS {
-    uint32_t DimCount; /* +0x0 : Integer */
-    uint32_t Flags; /* +0x2 : Integer */
+typedef struct TVarArrayRecS {
+    uint16_t DimCount; /* +0x0 : Integer */
+    uint16_t Flags; /* +0x2 : Integer */
     uint32_t ElementSize; /* +0x4 : Integer */
     uint32_t LockCount; /* +0x8 : Integer */
     uint32_t Data; /* +0xC : Pointer */
     uint32_t Bounds; /* +0x10 : TVarArrayBoundArray */
     uint8_t _tail[4];
-} TVarArrayS;
+} TVarArrayRecS;
 
 /* TVarArrayBound - 8 bytes */
-typedef struct TVarArrayBoundS {
+typedef struct TVarArrayBoundRecS {
     uint32_t ElementCount; /* +0x0 : Integer */
     uint32_t LowBound; /* +0x4 : Integer */
-} TVarArrayBoundS;
+} TVarArrayBoundRecS;
 
 /* TVarData - 16 bytes */
-typedef struct TVarDataS {
-    uint32_t VType; /* +0x0 : Integer */
-    uint32_t Reserved1; /* +0x2 : Integer */
-    uint32_t Reserved2; /* +0x4 : Integer */
-    uint32_t Reserved3; /* +0x6 : Integer */
+typedef struct TVarDataRecS {
+    uint16_t VType; /* +0x0 : Integer */
+    uint16_t Reserved1; /* +0x2 : Integer */
+    uint16_t Reserved2; /* +0x4 : Integer */
+    uint16_t Reserved3; /* +0x6 : Integer */
     uint32_t VSmallInt; /* +0x8 : Integer */
-    uint32_t VInteger; /* +0x8 : Integer */
-    float VSingle; /* +0x8 : Float:Single */
-    float VDouble; /* +0x8 : Float:Double */
-    float VCurrency; /* +0x8 : Float:Currency */
-    float VDate; /* +0x8 : Float:TDateTime */
-    uint32_t VOleStr; /* +0x8 : PWideChar */
-    uint32_t VDispatch; /* +0x8 : Pointer */
-    uint32_t VError; /* +0x8 : Integer */
-    uint32_t VBoolean; /* +0x8 : WordBool */
-    uint32_t VUnknown; /* +0x8 : Pointer */
-    uint32_t VShortInt; /* +0x8 : Integer */
-    uint32_t VByte; /* +0x8 : Integer */
-    uint32_t VWord; /* +0x8 : Integer */
-    uint32_t VLongWord; /* +0x8 : Integer */
-    uint32_t VUInt32; /* +0x8 : Integer */
-    uint32_t VInt64; /* +0x8 : Int64 */
-    uint32_t VUInt64; /* +0x8 : UInt64 */
-    uint32_t VString; /* +0x8 : Pointer */
-    uint32_t VAny; /* +0x8 : Pointer */
-    uint32_t VArray; /* +0x8 : PVarArray */
-    uint32_t VPointer; /* +0x8 : Pointer */
-    uint32_t VUString; /* +0x8 : Pointer */
-    uint32_t VRecord; /* +0x8 : record TVarRecord */
-    uint32_t VLongs; /* +0x4 : None */
-    uint32_t VWords; /* +0x2 : None */
-    uint32_t VBytes; /* +0x2 : None */
-    uint32_t RawData; /* +0x0 : None */
-    uint8_t _tail[12];
-} TVarDataS;
+    uint8_t _tail[4];
+} TVarDataRecS;
 
 /* TVarRec - 8 bytes */
-typedef struct TVarRecS {
+typedef struct TVarRecRecS {
     uint32_t VInteger; /* +0x0 : Integer */
-    uint8_t VBoolean; /* +0x0 : Boolean */
-    uint32_t VChar; /* +0x0 : Char */
-    uint32_t VExtended; /* +0x0 : PExtended */
-    uint32_t VString; /* +0x0 : PShortString */
-    uint32_t VPointer; /* +0x0 : Pointer */
-    uint32_t VPChar; /* +0x0 : PAnsiChar */
-    uint32_t VObject; /* +0x0 : class TObject */
-    uint32_t VClass; /* +0x0 : TClass */
-    uint32_t VWideChar; /* +0x0 : Char */
-    uint32_t VPWideChar; /* +0x0 : PWideChar */
-    uint32_t VAnsiString; /* +0x0 : Pointer */
-    uint32_t VCurrency; /* +0x0 : PCurrency */
-    uint32_t VVariant; /* +0x0 : PVariant */
-    uint32_t VInterface; /* +0x0 : Pointer */
-    uint32_t VWideString; /* +0x0 : Pointer */
-    uint32_t VInt64; /* +0x0 : PInt64 */
-    uint32_t VUnicodeString; /* +0x0 : Pointer */
-    uint32_t _Reserved1; /* +0x0 : Integer */
     uint32_t VType; /* +0x4 : Integer */
-} TVarRecS;
+} TVarRecRecS;
 
 /* TVarRecord - 8 bytes */
-typedef struct TVarRecordS {
+typedef struct TVarRecordRecS {
     uint32_t PRecord; /* +0x0 : Pointer */
     uint32_t RecInfo; /* +0x4 : Pointer */
-} TVarRecordS;
+} TVarRecordRecS;
 
 /* TVector - 12 bytes */
-typedef struct TVectorS {
+typedef struct TVectorRecS {
     uint32_t V; /* +0x0 : TVectorArray */
-    float X; /* +0x0 : Float:Single */
     float Y; /* +0x4 : Float:Single */
     float W; /* +0x8 : Float:Single */
-} TVectorS;
+} TVectorRecS;
 
 /* TVector3D - 16 bytes */
-typedef struct TVector3DS {
+typedef struct TVector3DRecS {
     uint32_t V; /* +0x0 : TVector3DType */
-    float X; /* +0x0 : Float:Single */
     float Y; /* +0x4 : Float:Single */
     float Z; /* +0x8 : Float:Single */
     float W; /* +0xC : Float:Single */
-} TVector3DS;
+} TVector3DRecS;
 
 /* TVertex - 12 bytes */
-typedef struct TVertexS {
+typedef struct TVertexRecS {
     uint32_t NumAttachments; /* +0x0 : Integer */
     PkDynArray SegmentsPivot; /* +0x4 : DynArray:TArrayOfWord */
     uint32_t SegmentsEndPoint; /* +0x8 : Integer */
-} TVertexS;
+} TVertexRecS;
 
 /* TVertexElement - 8 bytes */
-typedef struct TVertexElementS {
+typedef struct TVertexElementRecS {
     uint32_t Format; /* +0x0 : TVertexFormat */
     uint32_t Offset; /* +0x4 : Integer */
-} TVertexElementS;
+} TVertexElementRecS;
 
 /* TVideoStreamInfo - 88 bytes */
-typedef struct TVideoStreamInfoS {
+typedef struct TVideoStreamInfoRecS {
     uint32_t Language; /* +0x0 : string */
     uint32_t CodecName; /* +0x4 : string */
     uint32_t StartTime; /* +0x8 : Int64 */
-    uint8_t _pad_C[0x10 - 0xC];
+    uint8_t _pad258_C[0x10 - 0xC];
     uint32_t StartTimeScaled; /* +0x10 : Int64 */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad259_14[0x18 - 0x14];
     uint32_t Duration; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad260_1C[0x20 - 0x1C];
     uint32_t DurationScaled; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad261_24[0x28 - 0x24];
     uint32_t BitRate; /* +0x28 : Integer */
     uint32_t Height; /* +0x2C : Integer */
     uint32_t Width; /* +0x30 : Integer */
     float SampleAspectRatio; /* +0x34 : Float:Single */
     float DisplayAspectRatio; /* +0x38 : Float:Single */
     uint32_t SAR; /* +0x3C : record TAVRational */
-    uint8_t _pad_40[0x44 - 0x40];
+    uint8_t _pad262_40[0x44 - 0x40];
     uint32_t DAR; /* +0x44 : record TAVRational */
-    uint8_t _pad_48[0x4C - 0x48];
+    uint8_t _pad263_48[0x4C - 0x48];
     uint32_t PixFmt; /* +0x4C : None */
     uint32_t FrameRate; /* +0x50 : record TAVRational */
     uint8_t _tail[4];
-} TVideoStreamInfoS;
+} TVideoStreamInfoRecS;
 
 /* TVmtFieldEntry - 262 bytes */
-typedef struct TVmtFieldEntryS {
+typedef struct TVmtFieldEntryRecS {
     uint32_t FieldOffset; /* +0x0 : Integer */
-    uint32_t TypeIndex; /* +0x4 : Integer */
+    uint16_t TypeIndex; /* +0x4 : Integer */
     uint32_t Name; /* +0x6 : TSymbolName */
     uint8_t _tail[252];
-} TVmtFieldEntryS;
+} TVmtFieldEntryRecS;
 
 /* TVmtMethodEntry - 262 bytes */
-typedef struct TVmtMethodEntryS {
-    uint32_t Len; /* +0x0 : Integer */
+typedef struct TVmtMethodEntryRecS {
+    uint16_t Len; /* +0x0 : Integer */
     uint32_t CodeAddress; /* +0x2 : Pointer */
     uint32_t Name; /* +0x6 : TSymbolName */
     uint8_t _tail[252];
-} TVmtMethodEntryS;
+} TVmtMethodEntryRecS;
 
 /* TVmtMethodEntryTail - 9 bytes */
-typedef struct TVmtMethodEntryTailS {
-    uint32_t Version; /* +0x0 : Integer */
-    uint32_t CC; /* +0x1 : TCallConv */
+typedef struct TVmtMethodEntryTailRecS {
+    uint8_t Version; /* +0x0 : Integer */
+    uint8_t CC; /* +0x1 : TCallConv */
     uint32_t ResultType; /* +0x2 : PPTypeInfo */
-    uint32_t ParOff; /* +0x6 : Integer */
-    uint32_t ParamCount; /* +0x8 : Integer */
-} TVmtMethodEntryTailS;
+    uint16_t ParOff; /* +0x6 : Integer */
+    uint8_t ParamCount; /* +0x8 : Integer */
+} TVmtMethodEntryTailRecS;
 
 /* TVmtMethodExEntry - 8 bytes */
-typedef struct TVmtMethodExEntryS {
+typedef struct TVmtMethodExEntryRecS {
     uint32_t Entry; /* +0x0 : PVmtMethodEntry */
-    uint32_t Flags; /* +0x4 : Integer */
-    uint32_t VirtualIndex; /* +0x6 : Integer */
-} TVmtMethodExEntryS;
+    uint16_t Flags; /* +0x4 : Integer */
+    uint16_t VirtualIndex; /* +0x6 : Integer */
+} TVmtMethodExEntryRecS;
 
 /* tWAVEFORMATEX - 18 bytes */
-typedef struct tWAVEFORMATEXS {
-    uint32_t wFormatTag; /* +0x0 : Integer */
-    uint32_t nChannels; /* +0x2 : Integer */
+typedef struct tWAVEFORMATEXRecS {
+    uint16_t wFormatTag; /* +0x0 : Integer */
+    uint16_t nChannels; /* +0x2 : Integer */
     uint32_t nSamplesPerSec; /* +0x4 : Integer */
     uint32_t nAvgBytesPerSec; /* +0x8 : Integer */
-    uint32_t nBlockAlign; /* +0xC : Integer */
-    uint32_t wBitsPerSample; /* +0xE : Integer */
-    uint32_t cbSize; /* +0x10 : Integer */
-} tWAVEFORMATEXS;
+    uint16_t nBlockAlign; /* +0xC : Integer */
+    uint16_t wBitsPerSample; /* +0xE : Integer */
+    uint16_t cbSize; /* +0x10 : Integer */
+} tWAVEFORMATEXRecS;
 
 /* TWaveInfo - 72 bytes */
-typedef struct TWaveInfoS {
+typedef struct TWaveInfoRecS {
     uint32_t Channels; /* +0x0 : Integer */
     uint32_t SampleRate; /* +0x4 : Integer */
     uint32_t SampleFormat; /* +0x8 : None */
     uint32_t BytesPerSample; /* +0xC : Integer */
     uint32_t BytesPerSecond; /* +0x10 : Integer */
-    uint8_t _pad_14[0x18 - 0x14];
+    uint8_t _pad264_14[0x18 - 0x14];
     uint32_t PTS; /* +0x18 : Int64 */
-    uint8_t _pad_1C[0x20 - 0x1C];
+    uint8_t _pad265_1C[0x20 - 0x1C];
     uint32_t OriginalDTS; /* +0x20 : Int64 */
-    uint8_t _pad_24[0x28 - 0x24];
+    uint8_t _pad266_24[0x28 - 0x24];
     uint32_t OriginalPTS; /* +0x28 : Int64 */
-    uint8_t _pad_2C[0x30 - 0x2C];
+    uint8_t _pad267_2C[0x30 - 0x2C];
     uint32_t StreamIndex; /* +0x30 : Integer */
     uint8_t Ready; /* +0x34 : Boolean */
-    uint8_t _pad_35[0x38 - 0x35];
+    uint8_t _pad268_35[0x38 - 0x35];
     uint32_t Buffer; /* +0x38 : PByte */
     uint32_t Size; /* +0x3C : Integer */
     uint32_t Duration; /* +0x40 : Int64 */
     uint8_t _tail[4];
-} TWaveInfoS;
+} TWaveInfoRecS;
 
 /* TWMKey - 16 bytes */
-typedef struct TWMKeyS {
+typedef struct TWMKeyRecS {
     uint32_t Msg; /* +0x0 : Integer */
     uint32_t MsgFiller; /* +0x4 : record TDWordFiller */
-    uint32_t CharCode; /* +0x4 : Integer */
-    uint32_t Unused; /* +0x6 : Integer */
     uint32_t CharCodeUnusedFiller; /* +0x8 : record TDWordFiller */
-    uint32_t KeyData; /* +0x8 : Integer */
     uint32_t KeyDataFiller; /* +0xC : record TDWordFiller */
-    uint32_t Result; /* +0xC : Integer */
-} TWMKeyS;
+} TWMKeyRecS;
 
 /* TWMMenuChar - 16 bytes */
-typedef struct TWMMenuCharS {
+typedef struct TWMMenuCharRecS {
     uint32_t Msg; /* +0x0 : Integer */
     uint32_t MsgFiller; /* +0x4 : record TDWordFiller */
-    uint32_t User; /* +0x4 : Char */
-    uint32_t MenuFlag; /* +0x6 : Integer */
     uint32_t UserMenuFlagFiller; /* +0x8 : record TDWordFiller */
-    uint32_t Menu; /* +0x8 : Integer */
     uint32_t Result; /* +0xC : Integer */
-} TWMMenuCharS;
+} TWMMenuCharRecS;
 
 /* TZoomState - 16 bytes */
-typedef struct TZoomStateS {
+typedef struct TZoomStateRecS {
     float Scale; /* +0x0 : Float:Single */
     uint32_t ScaleCount; /* +0x4 : Integer */
-    uint32_t Offset; /* +0x8 : record TPointF */
-} TZoomStateS;
+    PkPoint Offset; /* +0x8 : record TPointF */
+} TZoomStateRecS;
 
 /* wavehdr_tag - 32 bytes */
-typedef struct wavehdr_tagS {
+typedef struct wavehdr_tagRecS {
     uint32_t lpData; /* +0x0 : PAnsiChar */
     uint32_t dwBufferLength; /* +0x4 : Integer */
     uint32_t dwBytesRecorded; /* +0x8 : Integer */
@@ -3785,21 +3640,21 @@ typedef struct wavehdr_tagS {
     uint32_t dwLoops; /* +0x14 : Integer */
     uint32_t lpNext; /* +0x18 : PWaveHdr */
     uint32_t reserved; /* +0x1C : Integer */
-} wavehdr_tagS;
+} wavehdr_tagRecS;
 
 /* WmfPlaceableFileHeader - 22 bytes */
-typedef struct WmfPlaceableFileHeaderS {
+typedef struct WmfPlaceableFileHeaderRecS {
     uint32_t Key; /* +0x0 : Integer */
-    uint32_t Hmf; /* +0x4 : Integer */
+    uint16_t Hmf; /* +0x4 : Integer */
     uint32_t BoundingBox; /* +0x6 : record PWMFRect16 */
-    uint8_t _pad_A[0xE - 0xA];
-    uint32_t Inch; /* +0xE : Integer */
+    uint8_t _pad269_A[0xE - 0xA];
+    uint16_t Inch; /* +0xE : Integer */
     uint32_t Reserved; /* +0x10 : Integer */
-    uint32_t Checksum; /* +0x14 : Integer */
-} WmfPlaceableFileHeaderS;
+    uint16_t Checksum; /* +0x14 : Integer */
+} WmfPlaceableFileHeaderRecS;
 
 /* z_stream - 56 bytes */
-typedef struct z_streamS {
+typedef struct z_streamRecS {
     uint32_t next_in; /* +0x0 : PByte */
     uint32_t avail_in; /* +0x4 : Integer */
     uint32_t total_in; /* +0x8 : Integer */
@@ -3814,8 +3669,9 @@ typedef struct z_streamS {
     uint32_t data_type; /* +0x2C : Integer */
     uint32_t adler; /* +0x30 : Integer */
     uint32_t reserved; /* +0x34 : Integer */
-} z_streamS;
+} z_streamRecS;
 
+#pragma pack(pop)
 /* ---- Field offset macros (name -> offset, all mapped classes) ---- */
 #define PK_TBackgroundColorForm_RectShow_OFF 0x2F8u
 #define PK_TBackgroundColorForm_RadioButtonLinear_OFF 0x2FCu
