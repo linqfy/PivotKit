@@ -66,3 +66,22 @@ patching per-instance affects one object. Both are viable: the VMT lives in
 3. **Thread safety** — install on the main thread while the message loop is
    paused (PeekMessage tick makes a natural install window).
 4. **Per-class VMT copy** for scoped virtual overrides (avoid global effects).
+
+## FMX virtual-slot map (for vtable hooking)
+
+TObject's 11 virtuals sit at fixed slots -44…-4 (see architecture/overview.md).
+For FMX classes (TControl and descendants), class-specific virtuals (Paint,
+Resize, MouseDown, MouseMove, KeyDown, …) occupy slots interleaved after
+ClassType+0 with the init table — the linker packs init-table data and new
+virtual slots in declaration order. Deriving exact slots requires either:
+
+1. cross-referencing FMX's published declaration order (FMX.Types/
+   FMX.Controls source, known for Delphi 11) against the VMT's code-pointer
+   run, or
+2. empirical probing at runtime (override a slot on a scratch VMT copy and
+   observe which behavior changes).
+
+Until the slot table is built, prefer published-method hooks (Tier 2) and
+TObject-slot hooks (Destroy at -4 is hot: object lifetimes for figure GC).
+`pk_hook_vmt_slot()` in src/v2/hooks.c is ready to consume the table once
+derived.
