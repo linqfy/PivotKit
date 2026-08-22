@@ -1,11 +1,6 @@
-/* pk_rtti.h - Delphi RTTI navigator (hardened port of the proven v1 code).
- *
- * Locates classes by name without hardcoded addresses, resolves published
- * methods (name -> VA) and published fields (name -> instance offset),
- * including inherited tables. The static database
- * (research/mappings/classes_full.json) provides compile-time offsets for
- * private fields; this header covers the runtime-side navigation.
- */
+/* pk_rtti.h - runtime Delphi RTTI navigation: class lookup by name,
+ * published method/field resolution. Static private-field offsets live in
+ * include/pivot/ (generated from docs/research/). */
 #ifndef PK_RTTI_H
 #define PK_RTTI_H
 

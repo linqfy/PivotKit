@@ -1,13 +1,7 @@
--- pivotlib2.lua - typed Pivot 5.2.11 API over the pivotkit v1 primitives.
---
--- Everything here is driven by the RE database (research/ in this repo):
---   TMainForm+0x654 = TFrameSequence (TArray<TFigures>) - the animation
---   TFigures        = one frame   (FiguresUnit)
---   TFigure         = one figure  (FigureUnit)
--- Offsets are for Pivot 5.2.11 (sha256 2c7911d3...); see research/classes/.
---
--- Requires the legacy runtime's `pivot` table (peek/read_u32/write_u32/
--- get_main_form/call/...). Pure Lua - no C rebuild needed.
+-- pivotlib2: typed API over the runtime pivot primitives.
+-- Offsets are RE-derived for 5.2.11 (docs/research/classes/):
+-- TMainForm+0x654 = TFrameSequence (TArray<TFigures>); TFigures = frame;
+-- TFigure = figure. Pure Lua; no C rebuild needed.
 
 local PL2 = { _VERSION = "pivotlib2 0.1 (Pivot 5.2.11)" }
 
@@ -231,6 +225,9 @@ _G.pl2 = PL2
 -- A lightweight retained UI: panels, labels, buttons with hit-testing on
 -- the main window's client rect. Redrawn every tick via the overlay.
 
+local Nav                       -- forward: nav button (defined below)
+local nav_draw                  -- forward: nav rendering (defined below)
+
 local UI = { widgets = {}, next_id = 1, dirty = true }
 PL2.ui = UI
 
@@ -266,12 +263,14 @@ end
 
 local mouse_was_down = false
 
-function UI.tick()                       -- call from on_update
+function UI.tick()                       -- call from on_update; also drives the nav button
     local wx, wy, wr, wb = pivot.window_rect()
     local cx, cy = pivot.cursor_pos()
     local mx, my = cx - wx, cy - wy      -- client coords
     local down = (pivot.key_down(0x01) == true) or (pivot.key_down(0x01) == 1)
 
+    local clicked = down and not mouse_was_down
+    Nav.tick(mx, my, down, clicked)
     for _, w in ipairs(UI.widgets) do
         if w.kind == "button" then
             local h = hit(w, mx, my)
@@ -296,6 +295,7 @@ function UI.tick()                       -- call from on_update
             pivot.overlay_text(w.x + 4, w.y + w.h / 2 - 7, w.text, 12, 0xFFFFFFFF)
         end
     end
+    nav_draw(wr - wx, wb - wy)
     pivot.overlay_commit()
     UI.dirty = false
 end
@@ -358,7 +358,7 @@ end
 
 -- ---------- raw-address calls/hooks (pivotkit.dll with call_addr support) --
 -- These reach ANY function in the binary, including the ~3500 internal
--- functions mapped in Ghidra (see research/ + include/pivot/ bindings).
+-- functions mapped in Ghidra (see docs/research/ + include/pivot/ bindings).
 -- Only use addresses verified for the running build.
 
 function PL2.call_addr(fn_addr, self, a1, a2, ...)
@@ -371,6 +371,150 @@ end
 
 function PL2.unhook_addr(fn_addr)
     return pivot.unhook_addr(fn_addr)
+end
+
+-- ---------- PivotKit nav button (top-right) + menu ------------------------
+
+Nav = { open = false, page = nil, page_data = nil }
+PL2.nav = Nav
+
+local LOGO = {
+    "  ____ _       _    _  ____ _   _ ___ ",
+    " |  _(_)_ __ | | _/ ||  _ (_) |_|_ _| ",
+    " | |_) | '_ \\| |/ / || |_) |  _ || |  ",
+    " |  __| |_) |   <  ||  __/| | || || |  ",
+    " |_|  | .__/|_|\\\\ ||_|   |_| |_||___|",
+    "     |_|            |__|              ",
+}
+
+-- Mod load order == sort order of the compiled mod files.
+function Nav.mod_list()
+    local names = {}
+    local p = io.popen('dir /b /on "mods/compiled/*.lc" 2>nul')
+    if p then
+        for line in p:lines() do
+            line = line:gsub("%.lc$", "")
+            names[#names + 1] = line
+        end
+        p:close()
+    end
+    if #names == 0 then
+        p = io.popen('dir /b /on "pivotkit/mods/compiled/*.lc" 2>nul')
+        if p then
+            for line in p:lines() do
+                line = line:gsub("%.lc$", "")
+                names[#names + 1] = line
+            end
+            p:close()
+        end
+    end
+    return names
+end
+
+function Nav.about_info()
+    local mf = PL2.main_form()
+    local base = 0
+    if pivot.class then
+        local ct = pivot.class("TMainForm")
+        if ct and ct ~= 0 then base = ct - 0x714D68 end  -- ct - (VMT - image base)
+    end
+    return {
+        lib      = PL2._VERSION or "pivotlib",
+        target   = "Pivot Animator 5.2.11 (2c7911d3)",
+        app_base = string.format("0x%X", base ~= 0 and base or 0),
+        frames   = tostring(PL2.frame_count()),
+        mainform = mf and string.format("0x%X", pivot.address(mf)) or "n/a",
+    }
+end
+
+function nav_draw(w, h)
+    local bx, by, bw, bh = w - 96, 4, 88, 20
+    pivot.overlay_rect(bx, by, bx + bw, by + bh, 0xE6305080)
+    pivot.overlay_text(bx + 10, by + 4, "PivotKit", 12, 0xFFFFFFFF)
+    Nav._box = { bx, by, bw, bh }
+    if Nav.open then
+        local mx = bx
+        local my = by + bh + 2
+        pivot.overlay_rect(mx, my, mx + bw, my + 42, 0xF0202020)
+        pivot.overlay_rect(mx + 2, my + 2, mx + bw - 2, my + 20, 0xFF3A3A50)
+        pivot.overlay_text(mx + 8, my + 4, "About", 12, 0xFFFFFFFF)
+        pivot.overlay_rect(mx + 2, my + 22, mx + bw - 2, my + 40, 0xFF3A3A50)
+        pivot.overlay_text(mx + 8, my + 24, "Mod List", 12, 0xFFFFFFFF)
+        Nav._items = {
+            { mx + 2, my + 2,  mx + bw - 2, my + 20, "about" },
+            { mx + 2, my + 22, mx + bw - 2, my + 40, "mods" },
+        }
+    else
+        Nav._items = nil
+    end
+    if Nav.page == "about" then
+        local px, py = math.floor(w / 2) - 190, 60
+        pivot.overlay_rect(px, py, px + 380, py + 190, 0xF6161622)
+        for i, line in ipairs(LOGO) do
+            pivot.overlay_text(px + 14, py + 8 + (i - 1) * 13, line, 12, 0xFF7FD0FF)
+        end
+        local info = Nav.about_info()
+        local rows = {
+            "library   : " .. tostring(info.lib),
+            "target    : " .. info.target,
+            "app base  : " .. info.app_base,
+            "main form : " .. info.mainform,
+            "frames    : " .. info.frames,
+        }
+        for i, r in ipairs(rows) do
+            pivot.overlay_text(px + 14, py + 96 + (i - 1) * 15, r, 12, 0xFFE0E0E0)
+        end
+        pivot.overlay_text(px + 14, py + 172, "[M] more info (opens repo)   [Esc] close", 12, 0xFF9A9AB0)
+        Nav._page_box = { px, py, 380, 190 }
+    elseif Nav.page == "mods" then
+        local list = Nav.mod_list()
+        local ph = 46 + #list * 15
+        local px, py = math.floor(w / 2) - 190, 60
+        pivot.overlay_rect(px, py, px + 380, py + ph, 0xF6161622)
+        pivot.overlay_text(px + 14, py + 8, "Loaded mods (load order)", 12, 0xFF7FD0FF)
+        for i, n in ipairs(list) do
+            pivot.overlay_text(px + 14, py + 28 + (i - 1) * 15,
+                              string.format("%2d. %s", i, n), 12, 0xFFE0E0E0)
+        end
+        pivot.overlay_text(px + 14, py + ph - 18, "[Esc] close", 12, 0xFF9A9AB0)
+        Nav._page_box = { px, py, 380, ph }
+    else
+        Nav._page_box = nil
+    end
+end
+
+function Nav.tick(mx, my, down, clicked)
+    if not pivot.overlay_rect then return end
+    local wx, wy, wr, wb = pivot.window_rect()
+    local w, h = wr - wx, wb - wy
+    local b = Nav._box
+    if clicked and b and mx >= b[1] and mx < b[1] + b[3] and my >= b[2] and my < b[2] + b[4] then
+        Nav.open = not Nav.open
+        return
+    end
+    if Nav.open and clicked then
+        local consumed = false
+        if Nav._items then
+            for _, it in ipairs(Nav._items) do
+                if mx >= it[1] and mx < it[3] and my >= it[2] and my < it[4] then
+                    Nav.open = false
+                    Nav.page = (it[5] == "about") and "about" or "mods"
+                    consumed = true
+                    break
+                end
+            end
+        end
+        local in_box = b and mx >= b[1] and mx < b[1] + b[3] and my >= b[2] and my < b[2] + b[4]
+        if not consumed and not in_box then Nav.open = false end
+    end
+    if Nav.page then
+        if pivot.key_down and (pivot.key_down(0x1B) == 1 or pivot.key_down(0x1B) == true) then
+            Nav.page = nil
+        end
+        if Nav.page == "about" and pivot.key_down and (pivot.key_down(0x4D) == 1 or pivot.key_down(0x4D) == true) then
+            os.execute('cmd /c start "" "https://github.com/linqfy/PivotKit"')
+        end
+    end
 end
 
 -- ---------- library merge ---------------------------------------------------

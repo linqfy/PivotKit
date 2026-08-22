@@ -1,9 +1,5 @@
-/* pk_core.h - PivotKit 2 core: base types, logging, version gate.
- *
- * Part of the PivotKit rewrite (branch: rewrite). See research/sdk-notes/
- * SDK-DESIGN.md for the architecture and research/ for the RE database this
- * code is built against (Pivot Animator 5.2.11, sha256 2c7911d3...).
- */
+/* pk_core.h - base types, logging, version gate.
+ * Targets Pivot 5.2.11 (sha256 2c7911d3...); offsets in docs/research/. */
 #ifndef PK_CORE_H
 #define PK_CORE_H
 

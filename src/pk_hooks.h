@@ -1,11 +1,6 @@
-/* pk_hooks.h - patch engine v2 (the "Harmony analog" for Delphi register
- * convention). Improvements over v1's install_hook():
- *   - length-decoded stolen bytes (v1 copied 6 bytes blind; must never split
- *     an instruction),
- *   - before/after/override patch semantics instead of raw callbacks,
- *   - patch registry with idempotent install/uninstall,
- *   - VMT-slot patches (scoped per class in the image) and IAT patches.
- */
+/* pk_hooks.h - patch engine: LDE-safe detours, before/after/override
+ * semantics, VMT-slot and IAT patches. Register convention (EAX=Self,
+ * EDX/ECX args, callee cleans via ret N). */
 #ifndef PK_HOOKS_H
 #define PK_HOOKS_H
 

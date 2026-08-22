@@ -136,6 +136,7 @@ regenerating the RTTI reference.
 
 ## Documentation
 
+- [All docs](docs/README.md) — guides, the RE knowledge base, Ghidra analysis, and example mods.
 - [Getting started](docs/GETTING_STARTED.md) — installation, first mod, and common fixes.
 - [pivotlib guide](docs/PIVOTLIB.md) — the recommended high-level API.
 - [Raw Lua API](docs/MOD_API.md) — the lower-level `pivot.*` surface.

@@ -1,6 +1,4 @@
-/* pk_api.c - typed Pivot surface implementation.
- * Offsets are the RE-database values for 5.2.11; see include/pivot/.
- */
+/* pk_api.c - typed accessors over the 5.2.11 RE offsets. */
 #include "pk_api.h"
 #include "pk_hooks.h"
 #include <windows.h>

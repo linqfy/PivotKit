@@ -1,9 +1,5 @@
-/* pk_api.h - typed Pivot surface (the mod-facing API).
- *
- * Offsets below come from the RE database for 5.2.11
- * (research/classes/*.md, generated into include/pivot/pivot_5_2_11.h).
- * Every accessor validates pointers; reading never crashes the host.
- */
+/* pk_api.h - typed mod-facing surface. Offsets are RE-derived for 5.2.11
+ * (include/pivot/pivot_5_2_11.h); all accessors are SEH-guarded. */
 #ifndef PK_API_H
 #define PK_API_H
 

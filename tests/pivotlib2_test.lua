@@ -89,7 +89,7 @@ print("ALL PIVOTLIB2 TESTS PASSED")
 local drawn = {}
 pivot.window_rect = function() return 100, 200, 700, 600 end
 pivot.cursor_pos  = function() return 100 + 55, 200 + 22 end   -- inside button
-pivot.key_down    = function(vk) return _MOUSE_DOWN and 1 or 0 end
+pivot.key_down    = function(vk) if vk == 0x01 then return _MOUSE_DOWN and 1 or 0 end return 0 end
 pivot.overlay_create = function() return true end
 pivot.overlay_begin  = function() drawn = {} end
 pivot.overlay_rect   = function(x1,y1,x2,y2,a) drawn[#drawn+1] = {"rect",x1,y1,x2,y2,a} end
@@ -104,19 +104,38 @@ pl2.ui.button("b", 40, 15, 60, 25, "Go", function() clicks = clicks + 1 end)
 
 _MOUSE_DOWN = false
 pl2._tick(1)
-assert(#drawn == 4, "widget draw count: " .. #drawn)  -- panel + label + button rect + button text
+-- panel + label + button rect + button text + nav rect + nav text
+assert(#drawn == 6, "widget draw count: " .. #drawn)
 assert(clicks == 0, "no click when mouse up")
 
+-- nav button: hover + click opens menu; Mod List opens the page
+pivot.cursor_pos = function() return 100 + 540, 200 + 10 end
 _MOUSE_DOWN = true
 pl2._tick(2)
-assert(clicks == 1, "click fired on press inside button")
+assert(pl2.nav.open == true, "nav menu did not open")
 pl2._tick(3)
+assert(pl2.nav._items and #pl2.nav._items == 2, "nav items missing")
+-- release, then click the second item (Mod List)
+_MOUSE_DOWN = false
+pl2._tick(4)
+pivot.cursor_pos = function() return 100 + 510, 200 + 56 end
+_MOUSE_DOWN = true
+pl2._tick(5)
+assert(pl2.nav.page == "mods", "mod list page did not open")
+_MOUSE_DOWN = false
+pl2._tick(6)
+pivot.cursor_pos = function() return 100 + 55, 200 + 22 end
+
+_MOUSE_DOWN = true
+pl2._tick(7)
+assert(clicks == 1, "click fired on press inside button")
+pl2._tick(8)
 assert(clicks == 1, "no re-fire while held")
 
 -- tick registration
 local ticks = 0
 pl2.on_tick(function() ticks = ticks + 1 end)
-pl2._tick(4)
+pl2._tick(9)
 assert(ticks == 1, "on_tick registered")
 
 print("PIVOTLIB2 UI/EVENT TESTS PASSED")

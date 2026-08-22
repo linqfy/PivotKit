@@ -470,7 +470,7 @@ def main():
     print(f"[+] {len(records)} records with field lists")
 
     out = args.out or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   "..", "mappings", "classes_full.json")
+                                   "..", "docs", "research", "mappings", "classes_full.json")
     out = os.path.abspath(out)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as fh:

@@ -10,7 +10,7 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-src = os.path.join(HERE, "..", "mappings", "classes_full.json")
+src = os.path.join(HERE, "..", "docs", "research", "mappings", "classes_full.json")
 out = os.path.join(HERE, "..", "mappings", "ghidra_rtti_labels.tsv")
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate C bindings from research/mappings/classes_full.json.
+"""Generate C bindings from docs/research/mappings/classes_full.json.
 
 Output: include/pivot/pivot_5_2_11.h  (single self-contained header)
 
@@ -17,7 +17,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(HERE, "..", "research", "mappings", "classes_full.json")
+DB = os.path.join(HERE, "..", "docs", "research", "mappings", "classes_full.json")
 OUT = os.path.join(HERE, "..", "include", "pivot", "pivot_5_2_11.h")
 
 APP_UNITS = {
