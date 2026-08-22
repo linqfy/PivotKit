@@ -98,3 +98,23 @@ compiler spec `borlanddelphi` (register calling convention: EAX=Self, EDX/ECX ar
 | Native UI | 30% | design + menu location; FMX construction pending; Python GUIs now available via bridge |
 | File formats read | 70% | .piv header validated; .piv body + .stk inner pending |
 | Lua+Python ergonomics | 90% | typed Lua + Python exec + bridge client, all tested |
+
+## Done (session 4) - MERGE (e4dd627..efc7fa4)
+
+* One PivotKit, no v1/v2 split: pk_core.c implemented; pk_rtti/pk_hooks/
+  pk_api moved into src/ and COMPILED+LINKED into pivotkit.dll.
+  Glue: pivot.pk_frame_count -> pk_api (module path live).
+* Lua libraries merged: pivotlib = legacy + typed API on one table
+  (legacy names win; pl2/pivotlib2 aliases). mods 01-03 unchanged.
+* gen_bindings hardened: pack(1), size-correct member types from
+  inter-field gaps, union-alias skipping -> offsetof == RE offsets.
+* build.bat builds the full merged product (DLL 513KB + loader).
+* REGRESSION SUITE (all green on the official build):
+  - DLL marker checks: call_addr/hook_addr/bytecode-loader/pk-glue/
+    bridge/console/overlay(w16)/sprites(w16) all present
+  - pkcompile: 11 mods -> bytecode + 1 python block -> .pyc, 0 failures
+  - tests/pivotlib2_test.lua (typed model + UI/events) PASSED
+  - tests/merged_lib_test.lua (coexistence, no API loss) PASSED
+  - tests/pkpython_test.py (bridge client) PASSED
+  - tests/test_pkbindings.c x86 exe: ALL BINDING CHECKS PASSED
+  - compiled chain (.lc -> bridge -> .pyc, python 3.13.1) OK
