@@ -56,14 +56,22 @@ if errorlevel 1 ( echo [ERROR] Lua compile failed & exit /b 1 )
 lib /nologo /out:"%OUT%\lua54.lib" "%OUT%\lua_obj\*.obj" >nul
 if errorlevel 1 ( echo [ERROR] lib failed & exit /b 1 )
 
+rem ---- Build merged module set (pk_core/rtti/hooks/api) ----
+for %%M in (pk_core pk_rtti pk_hooks pk_api) do (
+  cl /nologo /c /O2 /MT /D_CRT_SECURE_NO_WARNINGS /D_WIN32_WINNT=0x0601 ^
+     /I"%LUA%" /I"%SRC%" /I"%ROOT%include\pivot" /Fo"%OUT%\\\\" "%SRC%\%%M.c" >nul
+  if errorlevel 1 ( echo [ERROR] %%M.c compile failed & exit /b 1 )
+)
+
 rem ---- Build host DLL (32-bit pivotkit.dll) ----
 cl /nologo /c /O2 /MT /D_CRT_SECURE_NO_WARNINGS /D_WIN32_WINNT=0x0601 ^
-   /I"%LUA%" /I"%SRC%" /Fo"%OUT%\\" "%SRC%\pivotkit.cpp" >nul
+   /I"%LUA%" /I"%SRC%" /I"%ROOT%include\pivot" /Fo"%OUT%\\\\" "%SRC%\pivotkit.cpp" >nul
 if errorlevel 1 ( echo [ERROR] pivotkit.cpp compile failed & exit /b 1 )
 
 link /nologo /dll /machine:x86 /out:"%OUT%\pivotkit.dll" ^
-     "%OUT%\pivotkit.obj" "%OUT%\lua54.lib" ^
-     kernel32.lib user32.lib advapi32.lib gdi32.lib gdiplus.lib >nul
+     "%OUT%\pivotkit.obj" "%OUT%\pk_core.obj" "%OUT]\pk_rtti.obj" ^
+     "%OUT%\pk_hooks.obj" "%OUT]\pk_api.obj" "%OUT%\lua54.lib" ^
+     kernel32.lib user32.lib advapi32.lib gdi32.lib gdiplus.lib ws2_32.lib >nul
 if errorlevel 1 ( echo [ERROR] link pivotkit.dll failed & exit /b 1 )
 
 rem ---- Build injector (32-bit pivotkit-loader.exe) ----
