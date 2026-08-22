@@ -69,8 +69,8 @@ cl /nologo /c /O2 /MT /D_CRT_SECURE_NO_WARNINGS /D_WIN32_WINNT=0x0601 ^
 if errorlevel 1 ( echo [ERROR] pivotkit.cpp compile failed & exit /b 1 )
 
 link /nologo /dll /machine:x86 /out:"%OUT%\pivotkit.dll" ^
-     "%OUT%\pivotkit.obj" "%OUT%\pk_core.obj" "%OUT]\pk_rtti.obj" ^
-     "%OUT%\pk_hooks.obj" "%OUT]\pk_api.obj" "%OUT%\lua54.lib" ^
+     "%OUT%\pivotkit.obj" "%OUT%\pk_core.obj" "%OUT%\pk_rtti.obj" ^
+     "%OUT%\pk_hooks.obj" "%OUT%\pk_api.obj" "%OUT%\lua54.lib" ^
      kernel32.lib user32.lib advapi32.lib gdi32.lib gdiplus.lib ws2_32.lib >nul
 if errorlevel 1 ( echo [ERROR] link pivotkit.dll failed & exit /b 1 )
 
